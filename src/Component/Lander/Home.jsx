@@ -1,6 +1,8 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 import slide from "../../assets/slice.webp";
+import logo from "../../assets/portLogo.png"
+
 
 function Home() {
   return (
@@ -9,6 +11,7 @@ function Home() {
       <header className="sticky top-0 z-50 bg-white dark:bg-gray-900 shadow-md px-4 sm:px-6">
         <div className="flex justify-between items-center py-4 max-w-7xl mx-auto">
           <h1 className="text-2xl md:text-3xl font-extrabold text-indigo-600 dark:text-indigo-400 tracking-tight">Portfolink</h1>
+             <img src={logo} alt="" className='w-12 h-12'/>
           <div className="space-x-4 text-sm md:text-base">
             <Link to="/login" aria-label="Login to your Portfolink account" className="text-gray-700 dark:text-gray-300 hover:text-indigo-600 dark:hover:text-indigo-400 transition">Login</Link>
             <Link

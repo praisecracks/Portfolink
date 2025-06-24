@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
+import logo from "../../assets/portLogo.png"
 import {
   FaHome,
   FaUser,
@@ -124,6 +125,7 @@ function Sidebar({ sidebarOpen, setSidebarOpen }) {
         aria-label="Sidebar navigation"
       >
         <div className="flex justify-between items-center px-4">
+          <img src={logo} alt="" className='w-5 h-5' />
           <h2 className="text-2xl font-bold text-indigo-600 flex-grow text-center dark:text-indigo-400">
             Portfolink
           </h2>

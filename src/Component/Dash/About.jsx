@@ -1,6 +1,7 @@
 import React from 'react';
 import { FaInfoCircle, FaLightbulb, FaCheckCircle } from 'react-icons/fa';
 import { motion } from 'framer-motion';
+import logo from "../../assets/portLogo.png"
 
 const containerVariants = {
   hidden: {},
@@ -77,6 +78,7 @@ function About() {
           style={animatedGradientText}
           variants={fadeScaleUp}
         >
+          <img src={logo} alt="" className='w-24 h-24'/>
           <FaInfoCircle className="w-7 h-7 text-indigo-700" />
           About Portfolink
         </motion.h1>

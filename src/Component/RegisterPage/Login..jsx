@@ -10,6 +10,7 @@ import { auth, googleProvider, githubProvider, db } from '../../firebase';
 import { doc, setDoc } from 'firebase/firestore';
 import { toast } from 'react-toastify';
 import { motion } from 'framer-motion';
+import logo from "../../assets/portLogo.png"
 import 'react-toastify/dist/ReactToastify.css';
 
 function Login() {
@@ -123,6 +124,9 @@ function Login() {
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-indigo-100 via-white to-blue-50 px-4 py-10 text-gray-900 font-inter">
+      
+
+
       <motion.div
         initial={{ opacity: 0, y: 50 }}
         animate={{ opacity: 1, y: 0 }}
@@ -222,6 +226,14 @@ function Login() {
           </Link>
         </p>
       </motion.div>
+
+       <motion.img
+  src={logo}
+  alt=""
+  className="hidden sm:block "
+  animate={{ y: [0, -30, 0] }}
+  transition={{ repeat: Infinity, duration: 4, ease: "easeInOut" }}
+/>
     </div>
   );
 }
