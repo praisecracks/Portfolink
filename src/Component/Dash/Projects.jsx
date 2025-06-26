@@ -18,19 +18,13 @@ import {
   query,
   where,
 } from "firebase/firestore";
-import {
-  getStorage,
-  ref,
-  uploadBytes,
-  getDownloadURL,
-  deleteObject,
-} from "firebase/storage";
 import { getAuth, onAuthStateChanged } from "firebase/auth";
 import { toast } from "react-toastify";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import rehypeHighlight from "rehype-highlight";
 import "highlight.js/styles/github.css";
+import axios from "axios";
 
 function Projects() {
   const auth = getAuth();
@@ -41,6 +35,7 @@ function Projects() {
     title: "",
     description: "",
     imageFile: null,
+    imageURL: "",
     category: "",
     github: "",
     liveSite: "",
@@ -76,6 +71,7 @@ function Projects() {
       title: "",
       description: "",
       imageFile: null,
+      imageURL: "",
       category: "",
       github: "",
       liveSite: "",
@@ -90,6 +86,7 @@ function Projects() {
       title: project.title,
       description: project.description,
       imageFile: null,
+      imageURL: project.imageURL || "",
       category: project.category || "",
       github: project.github || "",
       liveSite: project.liveSite || "",
@@ -99,24 +96,34 @@ function Projects() {
     setFormVisible(true);
   };
 
+  const handleImageUpload = async (imageFile) => {
+    const formData = new FormData();
+    formData.append("image", imageFile);
+
+    try {
+      const res = await axios.post("http://localhost:5000/upload", formData);
+      return res.data.imageUrl;
+    } catch (error) {
+      toast.error("Image upload failed");
+      console.error("Upload error:", error);
+      return "";
+    }
+  };
+
   const handleSubmit = async (e, push = false) => {
     e.preventDefault();
     if (!formData.title || !formData.description) {
-      toast.error("All fields are required");
+      toast.error("Title and description are required");
       return;
     }
 
     try {
       setLoading(true);
-      const storage = getStorage();
-      let imageURL = "";
-      let imagePath = "";
+      let uploadedImageURL = formData.imageURL;
 
       if (formData.imageFile) {
-        imagePath = `users/${user.uid}/projects/${Date.now()}_${formData.imageFile.name}`;
-        const imageRef = ref(storage, imagePath);
-        await uploadBytes(imageRef, formData.imageFile);
-        imageURL = await getDownloadURL(imageRef);
+        uploadedImageURL = await handleImageUpload(formData.imageFile);
+        if (!uploadedImageURL) return;
       }
 
       const projectData = {
@@ -126,8 +133,7 @@ function Projects() {
         github: formData.github,
         liveSite: formData.liveSite,
         technologies: formData.technologies,
-        imageURL,
-        imagePath,
+        imageURL: uploadedImageURL,
         userId: user.uid,
         createdAt: serverTimestamp(),
         pushed: push,
@@ -167,6 +173,7 @@ function Projects() {
         title: "",
         description: "",
         imageFile: null,
+        imageURL: "",
         category: "",
         github: "",
         liveSite: "",
@@ -181,19 +188,10 @@ function Projects() {
     }
   };
 
-  const handleDelete = async (id, imagePath) => {
+  const handleDelete = async (id) => {
     if (!window.confirm("Are you sure you want to delete this project?")) return;
     try {
       await deleteDoc(doc(db, "projects", id));
-      if (imagePath) {
-        const storage = getStorage();
-        const imageRef = ref(storage, imagePath);
-        try {
-          await deleteObject(imageRef);
-        } catch (err) {
-          console.warn("Image deletion failed:", err.message);
-        }
-      }
       toast.success("Project deleted");
     } catch (err) {
       toast.error("Error deleting project");
@@ -206,7 +204,7 @@ function Projects() {
   );
 
   return (
-    <div>
+     <div>
       {/* HEADER */}
       <div className="flex justify-between items-center mb-6">
         <h1 className="text-2xl font-bold text-indigo-700">Projects</h1>

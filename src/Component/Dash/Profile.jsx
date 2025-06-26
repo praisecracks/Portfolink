@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useRef } from "react";
-import { FiCamera } from 'react-icons/fi'; // Camera icon
+import { FiCamera } from 'react-icons/fi';
 import {
   getAuth,
   onAuthStateChanged
@@ -13,12 +13,7 @@ import {
   query,
   where
 } from "firebase/firestore";
-import {
-  ref,
-  uploadBytes,
-  getDownloadURL
-} from "firebase/storage";
-import { db, storage } from "../../firebase";
+import { db } from "../../firebase";
 import moment from "moment";
 import { toast } from "react-toastify";
 
@@ -34,7 +29,6 @@ function Profile() {
     photoURL: ""
   });
   const [uploading, setUploading] = useState(false);
-
   const fileInputRef = useRef(null);
   const ADMIN_UID = "msLzg2LxX7Rd3WKVwaqmhWl9KUk2";
 
@@ -98,12 +92,16 @@ function Profile() {
   const handlePhotoUpload = async (file) => {
     try {
       setUploading(true);
-      const auth = getAuth();
-      const currentUser = auth.currentUser;
-      const fileRef = ref(storage, `users/${currentUser.uid}/profile.jpg`);
-      await uploadBytes(fileRef, file);
-      const url = await getDownloadURL(fileRef);
-      setEditForm((prev) => ({ ...prev, photoURL: url }));
+      const formData = new FormData();
+      formData.append("image", file);
+
+      const res = await fetch("http://localhost:5000/upload", {
+        method: "POST",
+        body: formData
+      });
+
+      const data = await res.json();
+      setEditForm((prev) => ({ ...prev, photoURL: data.imageUrl }));
       toast.success("Image uploaded!");
     } catch (error) {
       console.error("Image upload failed:", error);
@@ -142,47 +140,45 @@ function Profile() {
     toast.info("Photo will be removed when you save changes.");
   };
 
-  if (loading)
+  if (loading) {
     return (
       <div className="flex flex-col justify-center items-center h-screen gap-3">
         <div className="w-12 h-12 border-4 border-indigo-500 border-t-transparent rounded-full animate-spin"></div>
         <p className="text-sm text-gray-500">Fetching profile data...</p>
       </div>
     );
+  }
 
-  if (!userData)
+  if (!userData) {
     return (
       <p className="text-center mt-10 text-gray-500">
         No profile data found. Please update your profile.
       </p>
     );
+  }
 
   return (
     <div className="w-full min-h-screen bg-gray-50">
-      {/* Banner */}
-      {/* Banner */}
-<div className="w-full h-40 bg-indigo-600 relative group">
-  <div
-    className="absolute left-6 -bottom-14 w-28 h-28 rounded-full border-4 border-white bg-gray-200 overflow-hidden shadow-lg group-hover:opacity-90 transition cursor-pointer"
-    onClick={() => setIsModalOpen(true)}
-  >
-    <img
-      src={
-        userData.photoURL?.trim()
-          ? userData.photoURL
-          : 'https://cdn-icons-png.flaticon.com/512/149/149071.png' // default image
-      }
-      alt="Profile"
-      className="w-full h-full object-cover"
-    />
-    <div className="absolute inset-0 bg-black bg-opacity-40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition">
-      <FiCamera className="text-white text-xl" />
-    </div>
-  </div>
-</div>
+      <div className="w-full h-40 bg-indigo-600 relative group">
+        <div
+          className="absolute left-6 -bottom-14 w-28 h-28 rounded-full border-4 border-white bg-gray-200 overflow-hidden shadow-lg group-hover:opacity-90 transition cursor-pointer"
+          onClick={() => setIsModalOpen(true)}
+        >
+          <img
+            src={
+              userData.photoURL?.trim()
+                ? userData.photoURL
+                : 'https://cdn-icons-png.flaticon.com/512/149/149071.png'
+            }
+            alt="Profile"
+            className="w-full h-full object-cover"
+          />
+          <div className="absolute inset-0 bg-black bg-opacity-40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition">
+            <FiCamera className="text-white text-xl" />
+          </div>
+        </div>
+      </div>
 
-
-      {/* Profile Info */}
       <div className="pt-20 px-6">
         <div className="flex justify-between items-center mb-4">
           <div>
@@ -233,7 +229,6 @@ function Profile() {
         </div>
       </div>
 
-      {/* Edit Modal */}
       {isModalOpen && (
         <div className="fixed inset-0 z-50 bg-black bg-opacity-40 flex justify-center items-center px-4">
           <div className="bg-white w-full max-w-md rounded-xl p-6">
@@ -265,6 +260,22 @@ function Profile() {
               className="w-full border rounded px-4 py-2 mb-3"
             />
 
+            <input
+              type="file"
+              ref={fileInputRef}
+              style={{ display: "none" }}
+              onChange={(e) => handlePhotoUpload(e.target.files[0])}
+              accept="image/*"
+            />
+
+            <button
+              onClick={() => fileInputRef.current.click()}
+              className="bg-blue-500 text-white px-4 py-2 rounded text-sm hover:bg-blue-600 mb-3"
+              disabled={uploading}
+            >
+              {uploading ? "Uploading..." : "Upload New Photo"}
+            </button>
+
             {editForm.photoURL && (
               <div className="flex justify-between items-center mb-3">
                 <img
@@ -292,7 +303,7 @@ function Profile() {
                 onClick={handleSave}
                 className="bg-indigo-600 text-white px-4 py-2 rounded text-sm hover:bg-indigo-700"
               >
-                {uploading ? "Uploading..." : "Save Changes"}
+                Save Changes
               </button>
             </div>
           </div>
