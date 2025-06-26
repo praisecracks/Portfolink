@@ -4,6 +4,7 @@ import {
   getAuth,
   onAuthStateChanged
 } from "firebase/auth";
+import { uploadImageToBackend } from '../uploadImageToBackend'; // adjust the path based on where you place the file
 import {
   doc,
   getDoc,
@@ -90,26 +91,21 @@ function Profile() {
   };
 
   const handlePhotoUpload = async (file) => {
-    try {
-      setUploading(true);
-      const formData = new FormData();
-      formData.append("image", file);
-
-      const res = await fetch("http://localhost:5000/upload", {
-        method: "POST",
-        body: formData
-      });
-
-      const data = await res.json();
-      setEditForm((prev) => ({ ...prev, photoURL: data.imageUrl }));
+  try {
+    setUploading(true);
+    const imageUrl = await uploadImageToBackend(file);
+    if (imageUrl) {
+      setEditForm((prev) => ({ ...prev, photoURL: imageUrl }));
       toast.success("Image uploaded!");
-    } catch (error) {
-      console.error("Image upload failed:", error);
-      toast.error("Image upload failed");
-    } finally {
-      setUploading(false);
     }
-  };
+  } catch (error) {
+    console.error("Image upload failed:", error);
+    toast.error("Image upload failed");
+  } finally {
+    setUploading(false);
+  }
+};
+
 
   const handleSave = async () => {
     try {

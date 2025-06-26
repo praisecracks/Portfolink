@@ -228,7 +228,8 @@ function PostManagement() {
                   {post.createdAt?.toDate
                     ? post.createdAt.toDate().toLocaleString()
                     : 'Just now'}
-                </small>
+                </small><br />
+                <small className='text-green-500'>status: posted</small>
               </div>
               <div className="flex gap-2">
                 <button

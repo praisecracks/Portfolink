@@ -101,7 +101,7 @@ function Projects() {
     formData.append("image", imageFile);
 
     try {
-      const res = await axios.post("http://localhost:5000/upload", formData);
+      const res = await axios.post("https://portfolink-backend.onrender.com/upload", formData);
       return res.data.imageUrl;
     } catch (error) {
       toast.error("Image upload failed");
@@ -204,7 +204,7 @@ function Projects() {
   );
 
   return (
-     <div>
+      <div>
       {/* HEADER */}
       <div className="flex justify-between items-center mb-6">
         <h1 className="text-2xl font-bold text-indigo-700">Projects</h1>
