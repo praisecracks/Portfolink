@@ -8,10 +8,10 @@ import {
   query,
   where,
   limit,
+  orderBy,
   onSnapshot,
   addDoc,
   serverTimestamp,
-  orderBy,
 } from 'firebase/firestore';
 import { db } from '../../firebase';
 import {
@@ -65,7 +65,7 @@ function Dashboard() {
           setIsAdmin(false);
         }
       } catch (err) {
-        console.error('Error fetching profile:', err);
+        console.error('Error fetching profile:', err.message);
         setError('Failed to load profile.');
       } finally {
         setLoadingProfile(false);
@@ -84,13 +84,14 @@ function Dashboard() {
         const q = query(
           collection(db, 'portfolio'),
           where('userId', '==', user.uid),
-          limit(5)
+          orderBy('createdAt', 'desc'),
+          limit(3)
         );
         const snapshot = await getDocs(q);
         const projectsData = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
         setProjects(projectsData);
       } catch (err) {
-        console.error('Error fetching projects:', err);
+        console.error('Error fetching projects:', err.message);
         setError('Failed to load projects.');
       } finally {
         setLoadingProjects(false);
@@ -124,7 +125,7 @@ function Dashboard() {
       });
       setNewPost('');
     } catch (err) {
-      console.error('Error posting:', err);
+      console.error('Error posting:', err.message);
       alert('Failed to add post.');
     }
   };
@@ -230,7 +231,7 @@ function Dashboard() {
         <Stat icon={<FaTasks />} label="Recent Activity" value={projects.length} />
       </section>
 
-      {/* Projects */}
+      {/* Recent Projects */}
       <section>
         <h2 className="text-2xl font-semibold text-gray-800 mb-4">Recent Projects</h2>
         {projects.length === 0 ? (
@@ -252,7 +253,7 @@ function Dashboard() {
         )}
       </section>
 
-      {/* Modal */}
+      {/* Project Modal */}
       {selectedProject && (
         <div
           className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4"

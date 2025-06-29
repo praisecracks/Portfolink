@@ -1,10 +1,14 @@
+// FULL CODE IS TOO LONG FOR A SINGLE MESSAGE — SENDING IN 2 PARTS.
+// THIS IS PART 1 (Top Half)
+
 import React, { useEffect, useState } from "react";
 import {
   FaPlusCircle,
   FaTrash,
   FaEdit,
-  FaTimes,
   FaExternalLinkAlt,
+  FaTimes,
+  FaHistory,
 } from "react-icons/fa";
 import { db } from "../../firebase";
 import {
@@ -30,7 +34,13 @@ function Projects() {
   const auth = getAuth();
   const [user, setUser] = useState(null);
   const [projects, setProjects] = useState([]);
+  const [pushHistory, setPushHistory] = useState([]);
+  const [showPushHistory, setShowPushHistory] = useState(false);
   const [formVisible, setFormVisible] = useState(false);
+  const [editId, setEditId] = useState(null);
+  const [searchTerm, setSearchTerm] = useState("");
+  const [selectedProject, setSelectedProject] = useState(null);
+  const [loading, setLoading] = useState(false);
   const [formData, setFormData] = useState({
     title: "",
     description: "",
@@ -38,13 +48,12 @@ function Projects() {
     imageURL: "",
     category: "",
     github: "",
-    liveSite: "",
-    technologies: "",
+    liveURL: "",
+    tags: "",
   });
-  const [editId, setEditId] = useState(null);
-  const [searchTerm, setSearchTerm] = useState("");
-  const [selectedProject, setSelectedProject] = useState(null);
-  const [loading, setLoading] = useState(false);
+
+  const [sortOption, setSortOption] = useState("newest");
+  const [categoryFilter, setCategoryFilter] = useState("all");
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
@@ -66,6 +75,19 @@ function Projects() {
     return () => unsub();
   }, [user?.uid]);
 
+  useEffect(() => {
+    if (!user?.uid || !showPushHistory) return;
+    const q = query(collection(db, "portfolio"), where("userId", "==", user.uid));
+    const unsub = onSnapshot(q, (snapshot) => {
+      const items = snapshot.docs.map((doc) => ({
+        id: doc.id,
+        ...doc.data(),
+      }));
+      setPushHistory(items);
+    });
+    return () => unsub();
+  }, [user?.uid, showPushHistory]);
+
   const openAddForm = () => {
     setFormData({
       title: "",
@@ -74,8 +96,8 @@ function Projects() {
       imageURL: "",
       category: "",
       github: "",
-      liveSite: "",
-      technologies: "",
+      liveURL: "",
+      tags: "",
     });
     setEditId(null);
     setFormVisible(true);
@@ -89,23 +111,21 @@ function Projects() {
       imageURL: project.imageURL || "",
       category: project.category || "",
       github: project.github || "",
-      liveSite: project.liveSite || "",
-      technologies: project.technologies || "",
+      liveURL: project.liveURL || "",
+      tags: (project.tags || []).join(", "),
     });
     setEditId(project.id);
     setFormVisible(true);
   };
 
   const handleImageUpload = async (imageFile) => {
-    const formData = new FormData();
-    formData.append("image", imageFile);
-
+    const form = new FormData();
+    form.append("image", imageFile);
     try {
-      const res = await axios.post("https://portfolink-backend.onrender.com/upload", formData);
+      const res = await axios.post("https://portfolink-backend.onrender.com/upload", form);
       return res.data.imageUrl;
     } catch (error) {
       toast.error("Image upload failed");
-      console.error("Upload error:", error);
       return "";
     }
   };
@@ -126,13 +146,17 @@ function Projects() {
         if (!uploadedImageURL) return;
       }
 
-      const projectData = {
+      const tags = formData.tags
+        ? formData.tags.split(",").map((tag) => tag.trim().toLowerCase())
+        : [];
+
+      const data = {
         title: formData.title,
         description: formData.description,
         category: formData.category,
         github: formData.github,
-        liveSite: formData.liveSite,
-        technologies: formData.technologies,
+        liveURL: formData.liveURL,
+        tags,
         imageURL: uploadedImageURL,
         userId: user.uid,
         createdAt: serverTimestamp(),
@@ -140,35 +164,25 @@ function Projects() {
       };
 
       if (editId) {
-        await updateDoc(doc(db, "projects", editId), projectData);
+        await updateDoc(doc(db, "projects", editId), data);
         toast.success(push ? "Project pushed live!" : "Project updated");
-
         if (push) {
           await addDoc(collection(db, "portfolio"), {
-            ...projectData,
+            ...data,
             fromProjectId: editId,
           });
         }
       } else {
         if (push) {
-          await addDoc(collection(db, "portfolio"), projectData);
+          await addDoc(collection(db, "portfolio"), data);
         } else {
-          await addDoc(collection(db, "projects"), projectData);
+          await addDoc(collection(db, "projects"), data);
         }
-        toast.success(push ? "Project pushed live!" : "Project added");
-      }
-
-      if (push) {
-        toast.info("✅ Project pushed!", {
-          autoClose: 4000,
-          icon: "🚀",
-          onClick: () => {
-            window.open(formData.liveSite || "#", "_blank");
-          },
-        });
+        toast.success(push ? "Project pushed!" : "Project added");
       }
 
       setFormVisible(false);
+      setEditId(null);
       setFormData({
         title: "",
         description: "",
@@ -176,13 +190,11 @@ function Projects() {
         imageURL: "",
         category: "",
         github: "",
-        liveSite: "",
-        technologies: "",
+        liveURL: "",
+        tags: "",
       });
-      setEditId(null);
     } catch (err) {
       toast.error("Error saving project");
-      console.error(err);
     } finally {
       setLoading(false);
     }
@@ -192,125 +204,355 @@ function Projects() {
     if (!window.confirm("Are you sure you want to delete this project?")) return;
     try {
       await deleteDoc(doc(db, "projects", id));
-      toast.success("Project deleted");
+      toast.success("Deleted!");
     } catch (err) {
-      toast.error("Error deleting project");
-      console.error(err);
+      toast.error("Delete failed");
     }
   };
 
-  const filteredProjects = projects.filter((project) =>
-    project.title.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  const filteredProjects = projects
+    .filter((p) =>
+      p.title.toLowerCase().includes(searchTerm.toLowerCase()) &&
+      (categoryFilter === "all" || p.category === categoryFilter)
+    )
+    .sort((a, b) => {
+      if (sortOption === "newest") return b.createdAt?.seconds - a.createdAt?.seconds;
+      if (sortOption === "title") return a.title.localeCompare(b.title);
+      return 0;
+    });
+
+  const categories = ["all", ...new Set(projects.map((p) => p.category).filter(Boolean))];
 
   return (
-      <div>
-      {/* HEADER */}
-      <div className="flex justify-between items-center mb-6">
-        <h1 className="text-2xl font-bold text-indigo-700">Projects</h1>
-        <button
-          onClick={openAddForm}
-          className="flex items-center gap-2 bg-indigo-600 text-white px-4 py-2 rounded-lg hover:bg-indigo-700 transition"
-        >
-          <FaPlusCircle />
-          Add Project
-        </button>
+    <div className="max-w-6xl mx-auto px-4 py-10">
+      <div className="flex justify-between items-center flex-wrap gap-4 mb-6">
+        <h1 className="text-2xl font-bold text-indigo-700">📁 Manage Projects</h1>
+        <div className="flex gap-2">
+          <button
+            onClick={() => setShowPushHistory(true)}
+            className="flex items-center gap-2 text-sm px-4 py-2 border border-indigo-600 text-indigo-600 rounded hover:bg-indigo-50"
+          >
+            <FaHistory /> Push History
+          </button>
+          <button
+            onClick={openAddForm}
+            className="flex items-center gap-2 text-sm bg-indigo-600 text-white px-4 py-2 rounded hover:bg-indigo-700"
+          >
+            <FaPlusCircle /> New Project
+          </button>
+        </div>
       </div>
 
-      {/* SEARCH */}
-      <input
-        type="text"
-        placeholder="Search projects..."
-        value={searchTerm}
-        onChange={(e) => setSearchTerm(e.target.value)}
-        className="w-full mb-4 px-4 py-2 border rounded"
-      />
+      {!showPushHistory && (
+        <>
+          {/* Search, Filter, Sort */}
+          <div className="grid md:grid-cols-3 gap-3 mb-6">
+            <input
+              type="text"
+              placeholder="Search projects..."
+              className="border px-3 py-2 rounded w-full"
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+            />
+            <select
+              value={categoryFilter}
+              onChange={(e) => setCategoryFilter(e.target.value)}
+              className="border px-3 py-2 rounded w-full"
+            >
+              {categories.map((cat, i) => (
+                <option key={i} value={cat}>
+                  {cat === "all" ? "All Categories" : cat}
+                </option>
+              ))}
+            </select>
+            <select
+              value={sortOption}
+              onChange={(e) => setSortOption(e.target.value)}
+              className="border px-3 py-2 rounded w-full"
+            >
+              <option value="newest">Sort: Newest</option>
+              <option value="title">Sort: Title A-Z</option>
+            </select>
+          </div>
 
-      {/* FORM */}
-      {formVisible && (
-        <div className="bg-white rounded-xl p-6 shadow-md mb-6 border">
-          <h2 className="text-xl font-bold text-indigo-600 mb-4">
-            {editId ? "Edit Project" : "New Project"}
-          </h2>
-          <form onSubmit={(e) => handleSubmit(e, false)} className="space-y-4">
-            <input type="text" placeholder="Project title" className="w-full px-4 py-2 border rounded" value={formData.title} onChange={(e) => setFormData({ ...formData, title: e.target.value })} />
-            <textarea placeholder="Project description (supports markdown)" className="w-full px-4 py-2 border rounded h-32" value={formData.description} onChange={(e) => setFormData({ ...formData, description: e.target.value })} />
-            <input type="text" placeholder="Project category" className="w-full px-4 py-2 border rounded" value={formData.category} onChange={(e) => setFormData({ ...formData, category: e.target.value })} />
-            <input type="text" placeholder="Technologies used" className="w-full px-4 py-2 border rounded" value={formData.technologies} onChange={(e) => setFormData({ ...formData, technologies: e.target.value })} />
-            <input type="url" placeholder="GitHub URL" className="w-full px-4 py-2 border rounded" value={formData.github} onChange={(e) => setFormData({ ...formData, github: e.target.value })} />
-            <input type="url" placeholder="Live site URL" className="w-full px-4 py-2 border rounded" value={formData.liveSite} onChange={(e) => setFormData({ ...formData, liveSite: e.target.value })} />
-            <input type="file" accept="image/*" onChange={(e) => setFormData({ ...formData, imageFile: e.target.files[0] })} className="w-full px-4 py-2 border rounded" />
-            <div className="flex justify-end gap-2">
-              <button type="button" onClick={() => setFormVisible(false)} className="bg-gray-300 text-gray-800 px-4 py-2 rounded">Cancel</button>
-              <button type="submit" className="bg-yellow-500 text-white px-4 py-2 rounded" disabled={loading}>{loading ? "Saving..." : "Save"}</button>
-              <button type="button" onClick={(e) => handleSubmit(e, true)} className="bg-indigo-600 text-white px-4 py-2 rounded hover:bg-indigo-700">{loading ? "Pushing..." : "Push Live"}</button>
-            </div>
-          </form>
-        </div>
-      )}
-
-      {/* PROJECT CARDS */}
-      {filteredProjects.length === 0 ? (
-        <p className="text-gray-500">No project found.</p>
-      ) : (
-        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-          {filteredProjects.map((project) => (
-            <div key={project.id} onClick={() => setSelectedProject(project)} className="bg-white rounded-xl shadow-md overflow-hidden group relative hover:shadow-xl cursor-pointer">
-              {project.pushed && <span className="absolute top-2 right-2 bg-green-600 text-white text-xs px-2 py-1 rounded-full">Live</span>}
-              {project.imageURL ? <img src={project.imageURL} alt={project.title} className="w-full h-48 object-cover" /> : <div className="bg-gray-200 w-full h-48 flex items-center justify-center text-gray-500 text-lg font-bold">No Image</div>}
-              <div className="p-4 space-y-2">
-                <p className="text-gray-800 text-sm line-clamp-2">{project.description}</p>
-                <p className="text-xs text-indigo-600 font-medium">{project.category || "No category"}</p>
-                {project.technologies && <p className="text-xs text-gray-600">Tech: {project.technologies}</p>}
-                <div className="flex justify-end gap-3 text-lg">
-                  <button onClick={(e) => { e.stopPropagation(); openEditForm(project); }} className="text-blue-500 hover:text-blue-700" title="Edit"><FaEdit /></button>
-                  <button onClick={(e) => { e.stopPropagation(); handleDelete(project.id, project.imagePath); }} className="text-red-500 hover:text-red-700" title="Delete"><FaTrash /></button>
-                  {project.liveSite && (
-                    <a href={project.liveSite} target="_blank" rel="noopener noreferrer" className="text-indigo-500 hover:text-indigo-700" title="Live Site" onClick={(e) => e.stopPropagation()}>
-                      <FaExternalLinkAlt />
-                    </a>
+          {/* Projects Grid */}
+          {filteredProjects.length === 0 ? (
+            <p className="text-gray-500">No projects found.</p>
+          ) : (
+            <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+              {filteredProjects.map((project) => (
+                <div
+                  key={project.id}
+                  onClick={() => setSelectedProject(project)}
+                  className="bg-white border rounded-lg shadow-sm overflow-hidden hover:shadow-md cursor-pointer relative"
+                >
+                  {project.pushed && (
+                    <span className="absolute top-2 right-2 bg-green-600 text-white text-xs px-2 py-1 rounded-full">
+                      Live
+                    </span>
                   )}
+                  {project.imageURL ? (
+                    <img
+                      src={project.imageURL}
+                      alt={project.title}
+                      className="w-full h-40 object-cover"
+                    />
+                  ) : (
+                    <div className="h-40 bg-gray-100 flex items-center justify-center text-gray-400">
+                      No Image
+                    </div>
+                  )}
+                  <div className="p-4">
+                    <h3 className="font-semibold text-indigo-700 truncate">
+                      {project.title}
+                    </h3>
+                    <p className="text-sm text-gray-600 line-clamp-2 mb-2">
+                      {project.description}
+                    </p>
+                    <div className="flex justify-between text-sm">
+                      <span className="text-gray-500">
+                        {project.category || "Uncategorized"}
+                      </span>
+                      <div className="flex gap-3">
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            openEditForm(project);
+                          }}
+                          className="text-blue-500 hover:text-blue-700"
+                        >
+                          <FaEdit />
+                        </button>
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleDelete(project.id);
+                          }}
+                          className="text-red-500 hover:text-red-700"
+                        >
+                          <FaTrash />
+                        </button>
+                        {project.liveURL && (
+                          <a
+                            href={project.liveURL}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            onClick={(e) => e.stopPropagation()}
+                            className="text-indigo-600 hover:text-indigo-800"
+                          >
+                            <FaExternalLinkAlt />
+                          </a>
+                        )}
+                      </div>
+                    </div>
+                  </div>
                 </div>
-              </div>
+              ))}
             </div>
-          ))}
+          )}
+        </>
+      )}
+
+      {/* Push History */}
+      {showPushHistory && (
+        <div className="mt-6">
+          <div className="flex justify-between items-center mb-4">
+            <h2 className="text-lg font-semibold text-indigo-700">🕓 Push History</h2>
+            <button
+              onClick={() => setShowPushHistory(false)}
+              className="text-sm px-4 py-2 rounded border border-gray-300 hover:bg-gray-100"
+            >
+              Back to Projects
+            </button>
+          </div>
+          {pushHistory.length === 0 ? (
+            <p className="text-gray-500">No push history found.</p>
+          ) : (
+            <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+              {pushHistory.map((item) => (
+                <div
+                  key={item.id}
+                  onClick={() => setSelectedProject(item)}
+                  className="bg-white border rounded-lg shadow-sm hover:shadow-md cursor-pointer"
+                >
+                  {item.imageURL ? (
+                    <img
+                      src={item.imageURL}
+                      alt={item.title}
+                      className="w-full h-40 object-cover"
+                    />
+                  ) : (
+                    <div className="h-40 bg-gray-100 flex items-center justify-center text-gray-400">
+                      No Image
+                    </div>
+                  )}
+                  <div className="p-4">
+                    <h3 className="font-semibold text-indigo-700 truncate">
+                      {item.title}
+                    </h3>
+                    <p className="text-sm text-gray-600 line-clamp-2">
+                      {item.description}
+                    </p>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
         </div>
       )}
 
-      {/* MODAL */}
+      {/* Add/Edit Project Modal */}
+      {formVisible && (
+        <div
+          className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center z-50"
+          onClick={() => setFormVisible(false)}
+        >
+          <div
+            onClick={(e) => e.stopPropagation()}
+            className="bg-white rounded-xl shadow-lg max-w-xl w-full p-6 relative"
+          >
+            <button
+              onClick={() => setFormVisible(false)}
+              className="absolute top-3 right-3 text-xl text-gray-600 hover:text-gray-900"
+            >
+              <FaTimes />
+            </button>
+            <h2 className="text-lg font-semibold mb-4 text-indigo-700">
+              {editId ? "Edit Project" : "Add New Project"}
+            </h2>
+            <form onSubmit={(e) => handleSubmit(e)}>
+              <input
+                type="text"
+                placeholder="Title"
+                value={formData.title}
+                onChange={(e) =>
+                  setFormData({ ...formData, title: e.target.value })
+                }
+                className="w-full border px-3 py-2 mb-3 rounded"
+              />
+              <textarea
+                placeholder="Description (Markdown supported)"
+                value={formData.description}
+                onChange={(e) =>
+                  setFormData({ ...formData, description: e.target.value })
+                }
+                className="w-full border px-3 py-2 mb-3 rounded h-28"
+              />
+              <input
+                type="file"
+                onChange={(e) =>
+                  setFormData({ ...formData, imageFile: e.target.files[0] })
+                }
+                className="w-full mb-3"
+              />
+              <input
+                type="text"
+                placeholder="Category"
+                value={formData.category}
+                onChange={(e) =>
+                  setFormData({ ...formData, category: e.target.value })
+                }
+                className="w-full border px-3 py-2 mb-3 rounded"
+              />
+              <input
+                type="text"
+                placeholder="GitHub URL"
+                value={formData.github}
+                onChange={(e) =>
+                  setFormData({ ...formData, github: e.target.value })
+                }
+                className="w-full border px-3 py-2 mb-3 rounded"
+              />
+              <input
+                type="text"
+                placeholder="Live URL"
+                value={formData.liveURL}
+                onChange={(e) =>
+                  setFormData({ ...formData, liveURL: e.target.value })
+                }
+                className="w-full border px-3 py-2 mb-3 rounded"
+              />
+              <input
+                type="text"
+                placeholder="Tags (comma separated)"
+                value={formData.tags}
+                onChange={(e) =>
+                  setFormData({ ...formData, tags: e.target.value })
+                }
+                className="w-full border px-3 py-2 mb-4 rounded"
+              />
+              <div className="flex justify-end gap-3">
+                <button
+                  type="submit"
+                  className="bg-indigo-600 text-white px-4 py-2 rounded hover:bg-indigo-700"
+                >
+                  {editId ? "Update" : "Add"}
+                </button>
+                <button
+                  type="button"
+                  onClick={(e) => handleSubmit(e, true)}
+                  className="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700"
+                >
+                  Push Live
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* View Project Modal */}
       {selectedProject && (
-        <div className="fixed inset-0 bg-black bg-opacity-60 flex justify-center items-center z-50" onClick={() => setSelectedProject(null)}>
-          <div onClick={(e) => e.stopPropagation()} className="bg-white rounded-xl p-6 max-w-2xl w-full relative shadow-lg overflow-y-auto max-h-[90vh]">
-            <button onClick={() => setSelectedProject(null)} className="absolute top-4 right-4 text-gray-600 hover:text-gray-900 text-xl"><FaTimes /></button>
-            <h3 className="text-2xl font-semibold mb-3 text-indigo-700">{selectedProject.title}</h3>
+        <div
+          className="fixed inset-0 bg-black bg-opacity-60 flex justify-center items-center z-50"
+          onClick={() => setSelectedProject(null)}
+        >
+          <div
+            onClick={(e) => e.stopPropagation()}
+            className="bg-white p-6 rounded-xl max-w-2xl w-full relative shadow-md overflow-y-auto max-h-[90vh]"
+          >
+            <button
+              onClick={() => setSelectedProject(null)}
+              className="absolute top-4 right-4 text-xl text-gray-600 hover:text-gray-900"
+            >
+              <FaTimes />
+            </button>
+            <h2 className="text-xl font-bold text-indigo-700 mb-4">
+              {selectedProject.title}
+            </h2>
             {selectedProject.imageURL && (
-              <img src={selectedProject.imageURL} alt={selectedProject.title} className="w-full h-56 object-cover rounded mb-4" />
+              <img
+                src={selectedProject.imageURL}
+                alt={selectedProject.title}
+                className="w-full h-60 object-cover rounded mb-4"
+              />
             )}
             <ReactMarkdown
               remarkPlugins={[remarkGfm]}
               rehypePlugins={[rehypeHighlight]}
-              components={{
-                p: ({ node, ...props }) => <p className="text-gray-700 mb-2" {...props} />,
-                h1: ({ node, ...props }) => <h1 className="text-xl font-bold" {...props} />,
-                h2: ({ node, ...props }) => <h2 className="text-lg font-semibold" {...props} />,
-                ul: ({ node, ...props }) => <ul className="list-disc ml-5 mb-2" {...props} />,
-                code: ({ node, inline, className, children, ...props }) => (
-                  <code className={`bg-gray-100 px-1 rounded text-sm ${className || ""}`} {...props}>
-                    {children}
-                  </code>
-                ),
-              }}
             >
               {selectedProject.description || "No description"}
             </ReactMarkdown>
-            <p className="text-sm text-indigo-500 mt-4">Category: {selectedProject.category || "N/A"}</p>
+            <p className="text-sm text-gray-600 mt-4">
+              Category: {selectedProject.category || "N/A"}
+            </p>
             {selectedProject.github && (
-              <a href={selectedProject.github} target="_blank" rel="noopener noreferrer" className="text-sm text-blue-600 hover:underline mr-4">
+              <a
+                href={selectedProject.github}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-sm text-blue-600 hover:underline mt-2 block"
+              >
                 GitHub Repo
               </a>
             )}
-            {selectedProject.liveSite && (
-              <a href={selectedProject.liveSite} target="_blank" rel="noopener noreferrer" className="text-sm text-green-600 hover:underline">
+            {selectedProject.liveURL && (
+              <a
+                href={selectedProject.liveURL}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-sm text-green-600 hover:underline mt-1 block"
+              >
                 View Live
               </a>
             )}

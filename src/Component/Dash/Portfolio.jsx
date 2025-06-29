@@ -9,6 +9,7 @@ import {
   doc,
   getDoc,
   setDoc,
+  deleteDoc,
 } from 'firebase/firestore';
 import { db } from '../../firebase';
 import {
@@ -21,6 +22,7 @@ import {
   FaCopy,
 } from 'react-icons/fa';
 import { Dialog } from '@headlessui/react';
+import { toast } from "react-toastify";
 import { getAuth, onAuthStateChanged } from 'firebase/auth';
 import Profile from '../../assets/profile.png';
 
@@ -557,106 +559,181 @@ const saveProfile = async () => {
         )}
       </section>
 
-      {/* Project Section */}
-      <section className="max-w-5xl mx-auto">
-        <div className="flex justify-center space-x-4 mb-6">
-          {categories.map((cat) => (
-            <button
-              key={cat}
-              onClick={() => setCategory(cat)}
-              className={`px-4 py-2 rounded ${
-                category === cat
-                  ? 'bg-indigo-600 text-white'
-                  : 'bg-gray-200 text-gray-700 hover:bg-indigo-100'
-              }`}
-            >
-              {cat}
-            </button>
-          ))}
-        </div>
+{/* Project Section */}
+{/* Project Section */}
+<section className="max-w-5xl mx-auto px-4 py-10">
+  {/* Category Filter Buttons */}
+  <div className="flex justify-center flex-wrap gap-2 mb-8">
+    {categories.map((cat) => (
+      <button
+        key={cat}
+        onClick={() => setCategory(cat)}
+        className={`px-4 py-2 rounded ${
+          category === cat
+            ? 'bg-indigo-600 text-white'
+            : 'bg-gray-200 text-gray-700 hover:bg-indigo-100'
+        }`}
+      >
+        {cat}
+      </button>
+    ))}
+  </div>
 
-        {isLoadingProjects ? (
-          <div className="flex justify-center">
-            <div className="w-10 h-10 border-4 border-indigo-500 border-dashed rounded-full animate-spin"></div>
-          </div>
-        ) : filteredProjects.length === 0 ? (
-          <p className="text-center text-gray-500">No projects found.</p>
-        ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">
-            {filteredProjects.map((project) => (
-              <div
-                key={project.id}
-                className="bg-white rounded-lg shadow-md hover:shadow-xl transition p-4 cursor-pointer"
-                onClick={() => setSelectedProject(project)}
-              >
-                {project.imageURL && (
-                  <img
-                    src={project.imageURL}
-                    alt={project.title}
-                    className="rounded-md object-cover h-40 w-full mb-3"
-                  />
-                )}
-                <h3 className="text-lg font-semibold text-indigo-700">{project.title}</h3>
-                <p className="text-sm text-gray-600 mt-1">
-                  {project.description?.slice(0, 80)}...
-                </p>
-                {project.liveURL && (
-                  <a
-                    href={project.liveURL}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="inline-flex items-center mt-2 text-indigo-600 hover:underline text-sm"
-                    onClick={(e) => e.stopPropagation()}
-                  >
-                    Live Demo <FaExternalLinkAlt className="ml-1" />
-                  </a>
-                )}
-              </div>
-            ))}
+  {/* Loading & Empty State */}
+  {isLoadingProjects ? (
+    <div className="flex justify-center">
+      <div className="w-10 h-10 border-4 border-indigo-500 border-dashed rounded-full animate-spin"></div>
+    </div>
+  ) : filteredProjects.length === 0 ? (
+    <p className="text-center text-gray-500">No projects found.</p>
+  ) : (
+    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">
+      {filteredProjects.map((project) => (
+        <div
+          key={project.id}
+          className="bg-white rounded-lg shadow-md hover:shadow-xl transition p-4 cursor-pointer"
+          onClick={() => setSelectedProject(project)}
+        >
+          {project.imageURL ? (
+            <img
+              src={project.imageURL}
+              alt={project.title}
+              className="rounded-md object-cover h-40 w-full mb-3"
+            />
+          ) : (
+            <div className="h-40 bg-gray-100 flex items-center justify-center rounded-md mb-3">
+              <FiImage className="text-3xl text-gray-400" />
+            </div>
+          )}
+
+          <h3 className="text-lg font-semibold text-indigo-700">
+            {project.title}
+          </h3>
+
+          <p className="text-sm text-gray-600 mt-1 line-clamp-2">
+            {project.description?.slice(0, 80)}...
+          </p>
+
+          {project.tags && project.tags.length > 0 && (
+            <div className="mt-2 flex flex-wrap gap-1">
+              {project.tags.map((tag, i) => (
+                <span
+                  key={i}
+                  className="bg-indigo-100 text-indigo-800 text-xs font-medium px-2 py-1 rounded-full"
+                >
+                  {tag}
+                </span>
+              ))}
+            </div>
+          )}
+        </div>
+      ))}
+    </div>
+  )}
+
+  {/* Modal for Full Project View */}
+  {selectedProject && (
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center backdrop-blur-md bg-black/40 px-4"
+      onClick={() => setSelectedProject(null)}
+    >
+      <div
+        onClick={(e) => e.stopPropagation()}
+        className="bg-white w-full max-w-2xl p-6 rounded-xl shadow-lg overflow-y-auto max-h-[90vh] relative"
+      >
+        <button
+          className="absolute top-4 right-4 text-gray-600 hover:text-gray-900 text-xl"
+          onClick={() => setSelectedProject(null)}
+        >
+          &times;
+        </button>
+
+        <h2 className="text-2xl font-bold text-indigo-700 mb-3">
+          {selectedProject.title}
+        </h2>
+
+        {selectedProject.imageURL && (
+          <img
+            src={selectedProject.imageURL}
+            alt={selectedProject.title}
+            className="rounded mb-4 w-full max-h-60 object-cover"
+          />
+        )}
+
+        <p className="text-gray-700 whitespace-pre-line mb-4">
+          {selectedProject.description || "No description provided."}
+        </p>
+
+        {selectedProject.category && (
+          <p className="text-sm text-gray-500 mb-2">
+            <strong className="text-gray-700">Category:</strong> {selectedProject.category}
+          </p>
+        )}
+
+        {selectedProject.tags?.length > 0 && (
+          <div className="mb-4">
+            <h4 className="text-sm font-semibold text-gray-700 mb-1">Tech Stack:</h4>
+            <div className="flex flex-wrap gap-2">
+              {selectedProject.tags.map((tag, i) => (
+                <span
+                  key={i}
+                  className="bg-indigo-100 text-indigo-800 text-xs font-medium px-2 py-1 rounded-full"
+                >
+                  {tag}
+                </span>
+              ))}
+            </div>
           </div>
         )}
 
-        {/* Project Detail Modal */}
-        <Dialog
-          open={!!selectedProject}
-          onClose={() => setSelectedProject(null)}
-          className="fixed inset-0 z-50 overflow-y-auto"
-        >
-          <div className="flex items-center justify-center min-h-screen p-4">
-            <Dialog.Overlay className="fixed inset-0 bg-black opacity-30" />
-            <div className="relative bg-white rounded max-w-lg mx-auto p-6 w-full max-h-[90vh] overflow-y-auto z-60">
-              <Dialog.Title className="text-2xl font-bold text-indigo-700 mb-4">
-                {selectedProject?.title}
-              </Dialog.Title>
-              {selectedProject?.imageURL && (
-                <img
-                  src={selectedProject.imageURL}
-                  alt={selectedProject.title}
-                  className="rounded mb-4 max-h-60 w-full object-cover"
-                />
-              )}
-              <p className="mb-4 text-gray-700">{selectedProject?.description}</p>
-              {selectedProject?.liveURL && (
-                <a
-                  href={selectedProject.liveURL}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="inline-flex items-center text-indigo-600 hover:underline"
-                >
-                  View Live <FaExternalLinkAlt className="ml-1" />
-                </a>
-              )}
-              <button
-                onClick={() => setSelectedProject(null)}
-                className="absolute top-3 right-3 text-gray-500 hover:text-gray-700 text-2xl font-bold"
-                aria-label="Close"
-              >
-                &times;
-              </button>
+        {selectedProject.github && (
+          <div className="mt-2">
+            <span className="text-sm font-semibold text-gray-700">GitHub:</span>{' '}
+            <span className="text-sm text-blue-600 break-all">{selectedProject.github}</span>
+          </div>
+        )}
+
+        {selectedProject.liveURL && (
+          <div className="mt-4">
+            <h4 className="text-sm font-semibold text-gray-700 mb-2">Live Preview:</h4>
+            <div className="border rounded overflow-hidden">
+              <iframe
+                src={selectedProject.liveURL}
+                title="Live Preview"
+                className="w-full h-[400px] border-0"
+              ></iframe>
             </div>
           </div>
-        </Dialog>
-      </section>
+        )}
+
+        {/* Delete Button */}
+        <div className="mt-6 flex justify-end">
+          <button
+            onClick={async () => {
+              const confirm = window.confirm("Delete this project permanently?");
+              if (!confirm) return;
+
+              try {
+                await deleteDoc(doc(db, "portfolio", selectedProject.id));
+                await deleteDoc(doc(db, "projects", selectedProject.fromProjectId || selectedProject.id));
+                toast.success("Project deleted successfully!");
+                setSelectedProject(null);
+              } catch (err) {
+                console.error("Deletion error:", err);
+                toast.error("Failed to delete project.");
+              }
+            }}
+            className="px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700 transition"
+          >
+            Delete Project
+          </button>
+        </div>
+      </div>
+    </div>
+  )}
+</section>
+
+
 
       {!isEditing && (
         <button

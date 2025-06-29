@@ -14,11 +14,14 @@ import logo from "../../assets/portLogo.png"
 import 'react-toastify/dist/ReactToastify.css';
 
 function Login() {
+
   const navigate = useNavigate();
   const [formData, setFormData] = useState({ email: '', password: '' });
   const [errors, setErrors] = useState({});
   const [showPassword, setShowPassword] = useState(false);
   const [remember, setRemember] = useState(false);
+  const [loading, setLoading] = useState(false); // <-- Add this line
+
 
   useEffect(() => {
     const savedEmail = localStorage.getItem('rememberedEmail');
@@ -40,34 +43,39 @@ function Login() {
     return newErrors;
   };
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    const validationErrors = validate();
-    if (Object.keys(validationErrors).length > 0) return setErrors(validationErrors);
+const handleSubmit = async (e) => {
+  e.preventDefault();
+  const validationErrors = validate();
+  if (Object.keys(validationErrors).length > 0) return setErrors(validationErrors);
 
-    try {
-      const res = await signInWithEmailAndPassword(auth, formData.email, formData.password);
-      if (remember) {
-        localStorage.setItem('rememberedEmail', formData.email);
-      } else {
-        localStorage.removeItem('rememberedEmail');
-      }
+  setLoading(true); // Start loading
 
-      // Save user details to Firestore
-      await setDoc(doc(db, 'users', res.user.uid), {
-        uid: res.user.uid,
-        email: res.user.email,
-        provider: 'password',
-        lastLogin: new Date(),
-      }, { merge: true });
+  try {
+    const res = await signInWithEmailAndPassword(auth, formData.email, formData.password);
 
-      toast.success("Welcome back!");
-      navigate('/dashboard');
-    } catch (error) {
-      toast.error("Login failed. Please check your credentials.");
-      console.error(error);
+    if (remember) {
+      localStorage.setItem('rememberedEmail', formData.email);
+    } else {
+      localStorage.removeItem('rememberedEmail');
     }
-  };
+
+    await setDoc(doc(db, 'users', res.user.uid), {
+      uid: res.user.uid,
+      email: res.user.email,
+      provider: 'password',
+      lastLogin: new Date(),
+    }, { merge: true });
+
+    toast.success("Welcome back!");
+    navigate('/dashboard');
+  } catch (error) {
+    toast.error("Login failed. Please check your credentials.");
+    console.error(error);
+  } finally {
+    setLoading(false); // Stop loading
+  }
+};
+
 
   const handleGoogleLogin = async () => {
     try {
@@ -190,7 +198,9 @@ function Login() {
             type="submit"
             className="w-full bg-indigo-600 text-white py-2 rounded-lg font-semibold hover:bg-indigo-700 transition duration-300"
           >
-            Login
+           {
+            loading ? 'logging in...' : 'Login' 
+           } 
           </button>
         </form>
 
