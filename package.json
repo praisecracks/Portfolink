@@ -12,6 +12,7 @@
   "dependencies": {
     "@headlessui/react": "^2.2.4",
     "@tailwindcss/typography": "^0.5.16",
+    "aos": "^2.3.4",
     "axios": "^1.10.0",
     "docx": "^9.5.1",
     "file-saver": "^2.0.5",
