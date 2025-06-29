@@ -8,7 +8,6 @@ import {
   query,
   where,
   limit,
-  orderBy,
   onSnapshot,
   addDoc,
   serverTimestamp,
@@ -65,7 +64,7 @@ function Dashboard() {
           setIsAdmin(false);
         }
       } catch (err) {
-        console.error('Error fetching profile:', err.message);
+        console.error('Error fetching profile:', err);
         setError('Failed to load profile.');
       } finally {
         setLoadingProfile(false);
@@ -84,14 +83,13 @@ function Dashboard() {
         const q = query(
           collection(db, 'portfolio'),
           where('userId', '==', user.uid),
-          orderBy('createdAt', 'desc'),
           limit(3)
         );
         const snapshot = await getDocs(q);
         const projectsData = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
         setProjects(projectsData);
       } catch (err) {
-        console.error('Error fetching projects:', err.message);
+        console.error('Error fetching projects:', err);
         setError('Failed to load projects.');
       } finally {
         setLoadingProjects(false);
@@ -104,7 +102,7 @@ function Dashboard() {
   useEffect(() => {
     if (!user) return;
 
-    const q = query(collection(db, 'posts'), orderBy('createdAt', 'desc'), limit(10));
+    const q = query(collection(db, 'posts'));
     const unsubscribe = onSnapshot(q, (snapshot) => {
       const data = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
       setPosts(data);
@@ -125,7 +123,7 @@ function Dashboard() {
       });
       setNewPost('');
     } catch (err) {
-      console.error('Error posting:', err.message);
+      console.error('Error posting:', err);
       alert('Failed to add post.');
     }
   };
@@ -231,7 +229,7 @@ function Dashboard() {
         <Stat icon={<FaTasks />} label="Recent Activity" value={projects.length} />
       </section>
 
-      {/* Recent Projects */}
+      {/* Projects */}
       <section>
         <h2 className="text-2xl font-semibold text-gray-800 mb-4">Recent Projects</h2>
         {projects.length === 0 ? (
@@ -253,7 +251,7 @@ function Dashboard() {
         )}
       </section>
 
-      {/* Project Modal */}
+      {/* Modal */}
       {selectedProject && (
         <div
           className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4"
