@@ -1,48 +1,40 @@
-// index.js
+// index.js (Node backend)
 const express = require('express');
 const multer = require('multer');
 const cors = require('cors');
-const path = require('path');
+const { v2: cloudinary } = require('cloudinary');
 const fs = require('fs');
+const path = require('path');
 
 const app = express();
 app.use(cors());
 app.use(express.json());
 
-// Serve uploaded images statically
-app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
+// TEMP FILE STORAGE
+const upload = multer({ dest: 'temp/' });
 
-// Setup storage for images
-const storage = multer.diskStorage({
-  destination: function (req, file, cb) {
-    const uploadPath = path.join(__dirname, 'uploads');
-    if (!fs.existsSync(uploadPath)) fs.mkdirSync(uploadPath);
-    cb(null, uploadPath);
-  },
-  filename: function (req, file, cb) {
-    const uniqueName = `${Date.now()}-${file.originalname}`;
-    cb(null, uniqueName);
-  }
-});
-const upload = multer({ storage });
-
-// Upload route
-app.post('/upload', upload.single('image'), (req, res) => {
-  if (!req.file) {
-    return res.status(400).json({ error: 'No file uploaded' });
-  }
-
-  const imageUrl = `${req.protocol}://${req.get('host')}/uploads/${req.file.filename}`;
-  res.status(200).json({ imageUrl });
+// Configure Cloudinary
+cloudinary.config({
+  cloud_name: 'dcc1upymc',
+  api_key: '446286381522563',
+  api_secret: 'l83BgLvXFfv3uwOAtY6zKnvyfuk'
 });
 
-// Health check route
+// Upload endpoint
+app.post('/upload', upload.single('image'), async (req, res) => {
+  try {
+    const result = await cloudinary.uploader.upload(req.file.path);
+    fs.unlinkSync(req.file.path); // Clean up temp file
+    res.json({ imageUrl: result.secure_url });
+  } catch (err) {
+    res.status(500).json({ error: 'Upload failed', details: err.message });
+  }
+});
+
+// Health Check
 app.get('/', (req, res) => {
-  res.send('Portfolink Backend API is running ✅');
+  res.send('✅ Cloudinary Upload API Working');
 });
 
-// Start the server
 const PORT = process.env.PORT || 5000;
-app.listen(PORT, () => {
-  console.log(`Server running at http://localhost:${PORT}`);
-});
+app.listen(PORT, () => console.log(`Server running at http://localhost:${PORT}`));
