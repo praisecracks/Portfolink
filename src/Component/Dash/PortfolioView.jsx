@@ -1,16 +1,21 @@
 import React, { useEffect, useState, useRef } from 'react';
 import { useParams, Link } from 'react-router-dom';
-import { doc, getDoc, collection, query, where, getDocs } from 'firebase/firestore';
+import 'react-toastify/dist/ReactToastify.css';
+import { toast, ToastContainer } from 'react-toastify';
+import { doc,
+   getDoc,
+    collection,
+     query,
+      where,
+       getDocs,
+      addDoc,
+    serverTimestamp,
+   } from 'firebase/firestore';
 import { db } from '../../firebase';
 import Profile from '../../assets/profile.png';
 import {
-  FaExternalLinkAlt,
-  FaGithub,
-  FaLinkedin,
-  FaTwitter,
-  FaPrint,
-  FaDownload,
-  FaTimes,
+  FaExternalLinkAlt, FaGithub, FaLinkedin, FaTwitter, FaPrint,
+  FaDownload, FaTimes,
 } from 'react-icons/fa';
 import { FiSun, FiMoon } from 'react-icons/fi';
 import html2pdf from 'html2pdf.js';
@@ -26,6 +31,29 @@ function PortfolioView() {
   const [loading, setLoading] = useState(true);
   const [darkMode, setDarkMode] = useState(() => localStorage.getItem('darkMode') === 'true');
   const contentRef = useRef();
+  const contactFormRef = useRef();
+  const [contactForm, setContactForm] = useState({ name: '', email: '', message: '' });
+
+  const handleContactChange = (e) => {
+    const { name, value } = e.target;
+    setContactForm((prev) => ({ ...prev, [name]: value }));
+  };
+
+const handleContactSubmit = async (e) => {
+  e.preventDefault();
+  try {
+    await addDoc(collection(db, `messages/${uid}/inbox`), {
+      ...contactForm,
+      timestamp: new Date().toLocaleString(),
+    });
+    toast.success('Message sent successfully!');
+    setContactForm({ name: '', email: '', message: '' });
+  } catch (err) {
+    console.error('Message sending failed:', err);
+    toast.error('Failed to send message!');
+  }
+};
+
 
   useEffect(() => {
     if (darkMode) {
@@ -62,6 +90,10 @@ function PortfolioView() {
 
   const downloadPDF = () => {
     if (!contentRef.current) return;
+    const clone = contentRef.current.cloneNode(true);
+    const contactSection = clone.querySelector('#contact-form-section');
+    if (contactSection) contactSection.remove();
+
     html2pdf()
       .set({
         margin: 0.5,
@@ -70,23 +102,31 @@ function PortfolioView() {
         html2canvas: { scale: 2 },
         jsPDF: { unit: 'in', format: 'letter', orientation: 'portrait' },
       })
-      .from(contentRef.current)
+      .from(clone)
       .save();
   };
 
   const printPortfolio = () => {
     if (!contentRef.current) return;
-    const original = document.body.innerHTML;
-    const printContents = contentRef.current.innerHTML;
-    document.body.innerHTML = printContents;
-    window.print();
-    document.body.innerHTML = original;
-    window.location.reload();
+    const clone = contentRef.current.cloneNode(true);
+    const contactSection = clone.querySelector('#contact-form-section');
+    if (contactSection) contactSection.remove();
+
+    const printWindow = window.open('', '_blank');
+    printWindow.document.write('<html><head><title>Print</title></head><body>');
+    printWindow.document.write(clone.innerHTML);
+    printWindow.document.write('</body></html>');
+    printWindow.document.close();
+    printWindow.print();
   };
 
   const downloadAsImage = () => {
     if (!contentRef.current) return;
-    toPng(contentRef.current)
+    const clone = contentRef.current.cloneNode(true);
+    const contactSection = clone.querySelector('#contact-form-section');
+    if (contactSection) contactSection.remove();
+
+    toPng(clone)
       .then(dataUrl => {
         const link = document.createElement('a');
         link.download = `${profile?.fullName || 'portfolio'}.png`;
@@ -116,7 +156,6 @@ function PortfolioView() {
     const blob = await Packer.toBlob(doc);
     saveAs(blob, `${profile.fullName || 'portfolio'}.docx`);
   };
-
   if (loading) {
     return (
       <div className="flex flex-col justify-center items-center h-screen gap-3">
@@ -130,7 +169,6 @@ function PortfolioView() {
 
   return (
     <div className={`min-h-screen ${darkMode ? 'bg-gray-900 text-white' : 'bg-gray-50 text-gray-900'} px-4 py-8 max-w-5xl mx-auto relative transition-all`}>
-      
       {/* Action buttons */}
       <div className="flex gap-4 justify-end mb-4">
         <button
@@ -148,7 +186,7 @@ function PortfolioView() {
       <div ref={contentRef} className="bg-white dark:bg-gray-800 shadow-md p-6 rounded-md relative">
         <div className="absolute bottom-2 right-4 text-xs text-gray-300 dark:text-gray-500 opacity-70 pointer-events-none">Portfolink</div>
 
-        {/* Profile */}
+        {/* Profile Section */}
         <section className="flex flex-col items-center gap-4 mb-6">
           <img
             src={profile.photoURL?.trim() || Profile}
@@ -211,14 +249,58 @@ function PortfolioView() {
             </div>
           ) : <p className="text-gray-400 dark:text-gray-500">No projects available</p>}
         </section>
+
+        {/* Contact Form */}
+        <section id="contact-form-section" className="mt-20 max-w-2xl mx-auto bg-white dark:bg-gray-800 p-8 rounded-xl border border-indigo-100 dark:border-gray-700">
+          <h2 className="text-3xl font-bold text-center text-indigo-700 dark:text-indigo-300 mb-6">Contact Me</h2>
+          <p className="text-center text-gray-600 dark:text-gray-400 mb-8">
+            Have a project or idea in mind? I'd love to hear from you!
+          </p>
+          <form onSubmit={handleContactSubmit} className="space-y-6">
+            <div>
+              <label htmlFor="name" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Name</label>
+              <input type="text" id="name" name="name" required value={contactForm.name} onChange={handleContactChange}
+                className="w-full border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 outline-none focus:border-indigo-500 focus:ring focus:ring-indigo-200 rounded-md px-4 py-2 shadow-sm transition"
+                placeholder="e.g. Jane Doe" />
+            </div>
+            <div>
+              <label htmlFor="email" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Email</label>
+              <input type="email" id="email" name="email" required value={contactForm.email} onChange={handleContactChange}
+                className="w-full border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 outline-none focus:border-indigo-500 focus:ring focus:ring-indigo-200 rounded-md px-4 py-2 shadow-sm transition"
+                placeholder="e.g. jane@example.com" />
+            </div>
+            <div>
+              <label htmlFor="message" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Message</label>
+              <textarea id="message" name="message" rows="5" required value={contactForm.message} onChange={handleContactChange}
+                className="w-full border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 focus:border-indigo-500 focus:ring focus:ring-indigo-200 rounded-md px-4 py-2 shadow-sm transition resize-y outline-none"
+                placeholder="Write your message..." />
+            </div>
+            <div className="flex justify-center">
+              <button
+  type="submit"
+  className="bg-indigo-600 text-white font-semibold px-6 py-2 rounded-md hover:bg-indigo-700 transition duration-200 shadow flex items-center justify-center"
+  disabled={loading}
+>
+  {loading ? (
+    <>
+      <svg className="animate-spin h-5 w-5 mr-2 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z"></path>
+      </svg>
+      Sending...
+    </>
+  ) : (
+    "Send Message"
+  )}
+</button>
+            </div>
+          </form>
+        </section>
       </div>
 
       {/* CTA */}
       <div className="text-center mt-10">
-        <Link
-          to="/register"
-          className="px-5 py-3 bg-indigo-600 text-white rounded-md font-semibold hover:bg-indigo-700 transition"
-        >
+        <Link to="/register" className="px-5 py-3 bg-indigo-600 text-white rounded-md font-semibold hover:bg-indigo-700 transition">
           Sign Up to Create Your Own Portfolio
         </Link>
       </div>
@@ -227,15 +309,12 @@ function PortfolioView() {
       {selectedProject && (
         <div className="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center z-50 px-4">
           <div className="bg-white dark:bg-gray-800 max-w-xl w-full p-6 rounded-lg relative overflow-y-auto max-h-[90vh]">
-            <button onClick={() => setSelectedProject(null)} className="absolute top-3 right-4 text-gray-500 hover:text-red-500 text-xl">
-              <FaTimes />
-            </button>
+            <button onClick={() => setSelectedProject(null)} className="absolute top-3 right-4 text-gray-500 hover:text-red-500 text-xl"><FaTimes /></button>
             {selectedProject.imageURL && (
               <img src={selectedProject.imageURL} alt="Project" className="rounded mb-4 w-full object-cover h-52" />
             )}
             <h2 className="text-xl font-bold text-indigo-700 dark:text-indigo-300 mb-2">{selectedProject.title}</h2>
             <p className="text-sm text-gray-600 dark:text-gray-300 whitespace-pre-line mb-3">{selectedProject.description}</p>
-
             {selectedProject.github && (
               <p className="mb-2">
                 <span className="font-semibold">GitHub:</span>{' '}
@@ -244,7 +323,6 @@ function PortfolioView() {
                 </a>
               </p>
             )}
-
             {selectedProject.liveURL && (
               <p className="mb-2">
                 <span className="font-semibold">Live Demo:</span>{' '}
@@ -253,13 +331,11 @@ function PortfolioView() {
                 </a>
               </p>
             )}
-
             {selectedProject.duration && (
               <p className="text-sm text-gray-500 dark:text-gray-300 mb-2">
                 <strong>Duration:</strong> {selectedProject.duration}
               </p>
             )}
-
             {selectedProject.tools && selectedProject.tools.length > 0 && (
               <div className="mt-4">
                 <h4 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1">Tools Used:</h4>

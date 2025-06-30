@@ -65,7 +65,7 @@ function Dashboard() {
         }
       } catch (err) {
         console.error('Error fetching profile:', err);
-        setError('Failed to load profile.');
+        setError('Network problem. Failed to load profile.');
       } finally {
         setLoadingProfile(false);
       }
