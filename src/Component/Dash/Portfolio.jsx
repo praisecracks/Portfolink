@@ -78,6 +78,8 @@ const toggleSkill = (skill) => {
   }));
 };
 
+
+
 const addCustomSkill = () => {
   const skill = formData.customSkill.trim();
   if (skill && !formData.skills.includes(skill)) {
@@ -743,36 +745,27 @@ const handleContactSubmit = async (e) => {
           </div>
         )}
 
-        {selectedProject.liveURL && (
-          <div className="mt-4">
-            <h4 className="text-sm font-semibold text-gray-700 mb-2">Live Preview:</h4>
-            <div className="border rounded overflow-hidden">
-              <iframe
-                src={selectedProject.liveURL}
-                title="Live Preview"
-                className="w-full h-[400px] border-0"
-              ></iframe>
-            </div>
-          </div>
-        )}
 
         {/* Delete Button */}
         <div className="mt-6 flex justify-end">
           <button
             onClick={async () => {
-              const confirm = window.confirm("Delete this project permanently?");
-              if (!confirm) return;
+            const confirm = window.confirm("Delete this project permanently?");
+            if (!confirm) return;
 
-              try {
-                await deleteDoc(doc(db, "portfolio", selectedProject.id));
-                await deleteDoc(doc(db, "projects", selectedProject.fromProjectId || selectedProject.id));
-                toast.success("Project deleted successfully!");
-                setSelectedProject(null);
-              } catch (err) {
-                console.error("Deletion error:", err);
-                toast.error("Failed to delete project.");
-              }
-            }}
+            try {
+              // Try to delete from both collections, but don't fail if one doesn't exist
+              await Promise.allSettled([
+                deleteDoc(doc(db, "portfolio", selectedProject.id)),
+                deleteDoc(doc(db, "projects", selectedProject.fromProjectId || selectedProject.id)),
+              ]);
+              toast.success("Project deleted successfully!");
+              setSelectedProject(null);
+            } catch (err) {
+              console.error("Deletion error:", err);
+              toast.error("Failed to delete project.");
+            }
+          }}
             className="px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700 transition"
           >
             Delete Project

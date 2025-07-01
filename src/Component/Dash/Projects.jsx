@@ -438,13 +438,31 @@ function Projects() {
                 }
                 className="w-full border px-3 py-2 mb-3 rounded h-28"
               />
-              <input
-                type="file"
-                onChange={(e) =>
-                  setFormData({ ...formData, imageFile: e.target.files[0] })
-                }
-                className="w-full mb-3"
-              />
+                <input
+                  type="file"
+                  accept="image/*"
+                  onChange={(e) => {
+                    const file = e.target.files[0];
+                    if (file) {
+                      setFormData((prev) => ({
+                        ...prev,
+                        imageFile: file,
+                        imageURL: URL.createObjectURL(file), // preview before upload
+                      }));
+                    }
+                  }}
+                  className="w-full mb-3"
+                />
+
+                {formData.imageURL && (
+                  <div className="mb-3">
+                    <img
+                      src={formData.imageURL}
+                      alt="Preview"
+                      className="w-full h-40 object-cover rounded shadow"
+                    />
+                  </div>
+                )}
               <input
                 type="text"
                 placeholder="Category"
