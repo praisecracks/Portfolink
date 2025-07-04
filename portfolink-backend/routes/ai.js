@@ -1,9 +1,10 @@
+// index.js
+
 const express = require('express');
 const cors = require('cors');
 const multer = require('multer');
 const { v2: cloudinary } = require('cloudinary');
-const axios = require('axios');
-require('dotenv').config();
+require('dotenv').config(); // Load .env variables
 
 const app = express();
 app.use(cors());
@@ -40,9 +41,10 @@ app.post('/upload', upload.single('image'), (req, res) => {
   stream.end(req.file.buffer);
 });
 
-// ✅ AI (Cohere) Project Description Generator
+// ✅ AI (Cohere or OpenAI) Project Description Generator
 const aiRoute = require('./routes/ai');
 app.use('/ai', aiRoute);
 
+// ✅ Start server
 const PORT = process.env.PORT || 5000;
-const response = await axios.post("https://portfolink-backend.onrender.com/ai", { prompt });
+app.listen(PORT, () => console.log(`🚀 Server running at http://localhost:${PORT}`));
