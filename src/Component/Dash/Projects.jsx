@@ -1,6 +1,6 @@
 // FULL CODE IS TOO LONG FOR A SINGLE MESSAGE — SENDING IN 2 PARTS.
 // THIS IS PART 1 (Top Half)
-
+import { generateDescription } from "../../Utils/aiHelper";
 import React, { useEffect, useState } from "react";
 import {
   FaPlusCircle,
@@ -10,6 +10,7 @@ import {
   FaTimes,
   FaHistory,
 } from "react-icons/fa";
+import { FaSpinner } from "react-icons/fa";
 import { db } from "../../firebase";
 import {
   collection,
@@ -31,6 +32,7 @@ import "highlight.js/styles/github.css";
 import axios from "axios";
 
 function Projects() {
+  const [generating, setGenerating] = useState(false);
   const auth = getAuth();
   const [user, setUser] = useState(null);
   const [projects, setProjects] = useState([]);
@@ -222,7 +224,7 @@ function Projects() {
     });
 
   const categories = ["all", ...new Set(projects.map((p) => p.category).filter(Boolean))];
-
+  
   return (
     <div className="max-w-6xl mx-auto px-4 py-10">
       <div className="flex justify-between items-center flex-wrap gap-4 mb-6">
@@ -438,6 +440,58 @@ function Projects() {
                 }
                 className="w-full border px-3 py-2 mb-3 rounded h-28"
               />
+
+
+
+
+
+
+
+ <button
+  type="button"
+  onClick={async () => {
+    if (!formData.title?.trim()) {
+      toast.error("Add a title first!");
+      return;
+    }
+
+    setGenerating(true);
+    try {
+      const prompt = `${formData.title}, ${formData.tags}`;
+      const aiDesc = await generateDescription(prompt);
+
+      if (!aiDesc || aiDesc.trim().length < 10) {
+        throw new Error("Empty or weak AI response");
+      }
+
+      setFormData({ ...formData, description: aiDesc });
+      toast.success("Description generated! 🎉");
+    } catch (error) {
+      console.error("AI Error:", error);
+      toast.error("AI failed to generate description.");
+    } finally {
+      setGenerating(false);
+    }
+  }}
+  className="text-sm text-white bg-blue-600 px-3 py-1 rounded hover:bg-blue-700 flex items-center gap-2"
+  disabled={generating}
+>
+  {generating ? (
+    <>
+      <FaSpinner className="animate-spin" />
+      Generating...
+    </>
+  ) : (
+    "AI Generate Description"
+  )}
+</button>
+
+
+
+
+
+
+
                 <input
                   type="file"
                   accept="image/*"

@@ -172,7 +172,7 @@ function Dashboard() {
       </section>
 
       {/* Announcement Section */}
-      <section className="bg-white rounded-lg p-6 shadow-md max-w-5xl mx-auto">
+<section className="bg-white rounded-lg p-6 shadow-md w-full max-w-3xl md:max-w-4xl lg:max-w-5xl mx-auto">
         <div className="flex items-center mb-5 space-x-3">
           <FaBullhorn className="text-indigo-600 w-8 h-8" />
           <h2 className="text-2xl font-semibold text-indigo-700">Announcement</h2>
@@ -253,14 +253,14 @@ function Dashboard() {
 
       {/* Modal */}
       {selectedProject && (
-        <div
-          className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4"
-          onClick={() => setSelectedProject(null)}
-        >
-          <div
-            className="bg-white rounded-lg max-w-lg w-full p-6 relative"
-            onClick={(e) => e.stopPropagation()}
-          >
+            <div
+              className="fixed top-0 left-0 w-screen h-screen bg-black bg-opacity-50 flex items-center justify-center z-50"
+              onClick={() => setSelectedProject(null)}
+            >
+            <div
+              className="bg-white rounded-lg max-w-lg w-full p-6 relative max-h-screen overflow-y-auto"
+              onClick={(e) => e.stopPropagation()}
+            >
             <button
               onClick={() => setSelectedProject(null)}
               className="absolute top-4 right-4 text-gray-600 hover:text-gray-900 text-2xl"

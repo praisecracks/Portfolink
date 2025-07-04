@@ -129,7 +129,7 @@ function Sidebar({ sidebarOpen, setSidebarOpen }) {
     <>
       {sidebarOpen && isMobile && (
         <div
-          className="fixed inset-0 bg-black bg-opacity-20 z-40"
+          className="fixed inset-0 bg-black bg-opacity-5 z-40"
           onClick={() => setSidebarOpen(false)}
           aria-hidden="true"
         />
