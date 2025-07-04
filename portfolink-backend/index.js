@@ -2,7 +2,6 @@ const express = require('express');
 const cors = require('cors');
 const multer = require('multer');
 const { v2: cloudinary } = require('cloudinary');
-const axios = require('axios');
 require('dotenv').config();
 
 const app = express();
@@ -44,5 +43,8 @@ app.post('/upload', upload.single('image'), (req, res) => {
 const aiRoute = require('./routes/ai');
 app.use('/ai', aiRoute);
 
+// Start the server
 const PORT = process.env.PORT || 5000;
-const response = await axios.post("https://portfolink-backend.onrender.com/ai", { prompt });
+app.listen(PORT, () => {
+  console.log(`🚀 Server running on port ${PORT}`);
+});
