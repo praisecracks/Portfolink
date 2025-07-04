@@ -5,7 +5,9 @@ const { v2: cloudinary } = require('cloudinary');
 require('dotenv').config(); // Load .env variables
 
 const app = express();
-app.use(cors());
+app.use(cors({
+  origin: '*',
+}));
 app.use(express.json());
 
 // Multer setup for image uploads
