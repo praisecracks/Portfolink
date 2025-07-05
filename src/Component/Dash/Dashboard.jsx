@@ -172,11 +172,11 @@ function Dashboard() {
       </section>
 
       {/* Announcement Section */}
-<section className="bg-white rounded-lg p-6 shadow-md w-full max-w-3xl md:max-w-4xl lg:max-w-5xl mx-auto">
-        <div className="flex items-center mb-5 space-x-3">
-          <FaBullhorn className="text-indigo-600 w-8 h-8" />
-          <h2 className="text-2xl font-semibold text-indigo-700">Announcement</h2>
-        </div>
+<section className="bg-white rounded-lg p-6 shadow-md w-full max-w-xl sm:max-w-2xl md:max-w-3xl lg:max-w-4xl xl:max-w-6xl mx-auto px-2 sm:px-4">
+  <div className="flex items-center mb-5 space-x-3">
+    <FaBullhorn className="text-indigo-600 w-8 h-8" />
+    <h2 className="text-2xl font-semibold text-indigo-700">Announcement</h2>
+  </div>
 
         {isAdmin && (
           <form onSubmit={handlePostSubmit} className="mb-6">
