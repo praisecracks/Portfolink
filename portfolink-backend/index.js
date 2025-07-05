@@ -2,12 +2,10 @@ const express = require('express');
 const cors = require('cors');
 const multer = require('multer');
 const { v2: cloudinary } = require('cloudinary');
-require('dotenv').config(); // Load .env variables
+require('dotenv').config();
 
 const app = express();
-app.use(cors({
-  origin: '*',
-}));
+app.use(cors());
 app.use(express.json());
 
 // Multer setup for image uploads
@@ -41,10 +39,12 @@ app.post('/upload', upload.single('image'), (req, res) => {
   stream.end(req.file.buffer);
 });
 
-// ✅ Link AI route
-const aiRoute = require('./routes/ai'); // This is the file above
+// ✅ AI (Cohere) Project Description Generator
+const aiRoute = require('./routes/ai');
 app.use('/ai', aiRoute);
 
-// ✅ Start server
+// Start the server
 const PORT = process.env.PORT || 5000;
-app.listen(PORT, () => console.log(`🚀 Server running at http://localhost:${PORT}`));
+app.listen(PORT, () => {
+  console.log(`🚀 Server running on port ${PORT}`);
+});

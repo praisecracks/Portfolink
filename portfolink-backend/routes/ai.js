@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 const axios = require('axios');
 
+// POST /ai
 router.post('/', async (req, res) => {
   const { prompt } = req.body;
 
