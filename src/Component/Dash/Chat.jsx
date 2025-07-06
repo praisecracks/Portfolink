@@ -11,6 +11,7 @@ import {
   Maximize2,
   Minimize2,
 } from 'lucide-react';
+import logo from '../../assets/portlogo.png'
 
 function Chat() {
   const [input, setInput] = useState('');
@@ -111,7 +112,7 @@ function Chat() {
       ) : (
         <div className={`${containerSize} bg-white dark:bg-gray-900 rounded-2xl shadow-2xl flex flex-col p-4 border border-blue-500 flex-1 overflow-y-auto space-y-3 mb-2 px-1`}>
           <div className="flex justify-between items-center mb-3 ">
-            <h2 className="text-lg font-semibold text-gray-800 dark:text-white">🧠 AI Chat Assistant</h2>
+            <h2 className="text-lg font-semibold text-gray-800 dark:text-white flex"><img className='h-7 w-7' src={logo} alt="" />  AI Chat Assistant</h2>
             <div className="flex items-center gap-2">
               <button
                 onClick={() => setVoiceEnabled(!voiceEnabled)}
