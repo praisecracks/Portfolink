@@ -16,6 +16,7 @@ import PortfolioView from "./Component/Dash/PortfolioView.jsx";
 import About from "./Component/Dash/About.jsx";
 import Post from "./Component/Dash/Post.jsx";
 import Messages from "./Component/Dash/Message.jsx";
+import Chat from "./Component/Dash/Chat.jsx";
 
 function App() {
   const location = useLocation();
@@ -40,7 +41,8 @@ function App() {
         <Route path='about' element={<About/>} />
        <Route path='post' element={<Post/>} />
     <Route path='messages' element={<Messages />} /> 
-
+    <Route path='chat' element={<Chat/>} /> 
+\
   </Route>
 </Routes>
 

@@ -21,6 +21,7 @@ import {
   FaBullhorn,
   FaExclamationCircle,
 } from 'react-icons/fa';
+import Chat from './Chat';
 
 function Dashboard() {
   const auth = getAuth();
@@ -302,6 +303,7 @@ const Stat = ({ icon, label, value }) => (
       <p className="text-gray-500">{label}</p>
       <p className="text-2xl font-semibold text-gray-900">{value}</p>
     </div>
+    <Chat/>
   </div>
 );
 

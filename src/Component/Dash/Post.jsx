@@ -13,6 +13,7 @@ import {
 } from 'firebase/firestore';
 import { toast } from 'react-toastify';
 import axios from 'axios';
+import Chat from './Chat';
 
 function PostManagement() {
   const currentUser = auth.currentUser;
@@ -249,6 +250,7 @@ function PostManagement() {
           ))}
         </ul>
       )}
+      <Chat/>
     </div>
   );
 }

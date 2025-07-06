@@ -465,7 +465,7 @@ function Projects() {
       }
 
       setFormData({ ...formData, description: aiDesc });
-      toast.success("Description generated! 🎉");
+      toast.success("Description generated!");
     } catch (error) {
       console.error("AI Error:", error);
       toast.error("AI failed to generate description.");
