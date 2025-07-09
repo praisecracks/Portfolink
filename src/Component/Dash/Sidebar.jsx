@@ -102,70 +102,80 @@ function Sidebar({ sidebarOpen, setSidebarOpen }) {
 
   const isActive = (path) => location.pathname === path;
 
-  const linkBaseClasses =
-    "flex items-center py-2.5 px-4 rounded transition-colors duration-200 cursor-pointer select-none";
-
+  const linkBaseClasses = "flex items-center gap-2 py-2.5 px-4 rounded transition duration-200 select-none text-sm font-medium";
   const linkInactiveClasses = "text-gray-700 hover:bg-indigo-100 dark:text-gray-300 dark:hover:bg-indigo-700";
-
-  const linkActiveClasses = "bg-indigo-100 font-semibold text-indigo-800 dark:bg-indigo-700 dark:text-white";
+  const linkActiveClasses = "bg-indigo-100 text-indigo-900 font-semibold dark:bg-indigo-700 dark:text-white";
 
   return (
     <>
       {sidebarOpen && isMobile && (
         <div
-          className="fixed inset-0 bg-black bg-opacity-5 z-40"
+          className="fixed inset-0 bg-black bg-opacity-20 z-40"
           onClick={() => setSidebarOpen(false)}
-          aria-hidden="true"
         />
       )}
 
       <aside
-        className={`bg-white shadow-md w-64 py-4 px-2 overflow-y-auto max-h-screen absolute inset-y-0 left-0 transform ${
+        className={`bg-white dark:bg-gray-900 shadow-md w-64 py-4 px-2 overflow-y-auto max-h-screen fixed inset-y-0 left-0 transform ${
           sidebarOpen ? "translate-x-0" : "-translate-x-full"
-        } md:relative md:translate-x-0 transition-transform duration-200 ease-in-out z-50 dark:bg-gray-900`}
-        aria-label="Sidebar navigation"
+        } md:relative md:translate-x-0 transition-transform duration-200 ease-in-out z-50`}
       >
-        <div className="flex justify-between items-center px-4">
-          <img src={logo} alt="logo" className='w-5 h-5' />
-          <h2 className="text-2xl font-bold text-indigo-600 flex-grow text-center dark:text-indigo-400">
+        {/* Header */}
+        <div className="flex justify-between items-center px-4 mb-4">
+          <img src={logo} alt="logo" className='w-6 h-6' />
+          <h2 className="text-xl font-bold text-indigo-600 text-center flex-1 dark:text-indigo-400">
             Portfolink
           </h2>
           {isMobile && (
             <button onClick={() => setSidebarOpen(false)} aria-label="Close Sidebar">
-              <FaTimes size={20} className="text-gray-600 dark:text-white" />
+              <FaTimes size={18} className="text-gray-600 dark:text-white" />
             </button>
           )}
         </div>
 
-        <nav className="mt-10 flex flex-col gap-1">
+        {/* User Profile */}
+        {currentUser && (
+          <div className="flex flex-col items-center gap-1 px-4 py-3 text-center mb-3 border-b dark:border-gray-700">
+            <img
+              src={currentUser.photoURL || "/default-avatar.png"}
+              alt="User Avatar"
+              className="w-16 h-16 rounded-full object-cover border"
+            />
+            <h3 className="text-sm font-semibold dark:text-white text-gray-800">{currentUser.displayName || "User"}</h3>
+            <p className="text-xs text-gray-500 dark:text-gray-400 truncate">{currentUser.email}</p>
+          </div>
+        )}
+
+        {/* Navigation */}
+        <nav className="flex flex-col gap-1">
           <Link to="/dashboard" onClick={handleLinkClick} className={`${linkBaseClasses} ${isActive("/dashboard") ? linkActiveClasses : linkInactiveClasses}`}>
-            <FaHome className="inline-block mr-2 w-5 h-5" /> Home
+            <FaHome /> Home
           </Link>
           <Link to="/dashboard/profile" onClick={handleLinkClick} className={`${linkBaseClasses} ${isActive("/dashboard/profile") ? linkActiveClasses : linkInactiveClasses}`}>
-            <FaUser className="inline-block mr-2 w-5 h-5" /> Profile
+            <FaUser /> Profile
           </Link>
 
           {/* Portfolio Dropdown */}
           <div>
             <button
               onClick={() => setPortfolioOpen(!portfolioOpen)}
-              className={`${linkBaseClasses} ${location.pathname.startsWith("/dashboard/portfolio") ? linkActiveClasses : linkInactiveClasses} flex justify-between w-full`}
+              className={`${linkBaseClasses} ${location.pathname.startsWith("/dashboard/portfolio") ? linkActiveClasses : linkInactiveClasses} w-full flex justify-between items-center`}
             >
-              <span className="flex items-center">
-                <FaIdBadge className="mr-2 w-5 h-5" />
+              <span className="flex items-center gap-2">
+                <FaIdBadge />
                 Portfolio
               </span>
-              <span className="ml-auto text-sm">{portfolioOpen ? '▲' : '▼'}</span>
+              <span className="text-xs">{portfolioOpen ? '▲' : '▼'}</span>
             </button>
 
             {portfolioOpen && (
-              <div className="ml-6 mt-1 space-y-1 transition-all duration-200">
+              <div className="ml-6 mt-1 space-y-1">
                 <Link
                   to="/dashboard/portfolio"
                   onClick={handleLinkClick}
                   className={`${linkBaseClasses} ${isActive("/dashboard/portfolio") ? linkActiveClasses : linkInactiveClasses}`}
                 >
-                  View/Edit Portfolio
+                  View/Edit
                 </Link>
                 <Link
                   to="/dashboard/portfolio/resume"
@@ -179,42 +189,40 @@ function Sidebar({ sidebarOpen, setSidebarOpen }) {
           </div>
 
           <Link to="/dashboard/projects" onClick={handleLinkClick} className={`${linkBaseClasses} ${isActive("/dashboard/projects") ? linkActiveClasses : linkInactiveClasses}`}>
-            <FaProjectDiagram className="inline-block mr-2 w-5 h-5" /> Projects
+            <FaProjectDiagram /> Projects
           </Link>
 
           <Link to="/dashboard/messages" onClick={handleLinkClick} className={`${linkBaseClasses} ${isActive("/dashboard/messages") ? linkActiveClasses : linkInactiveClasses}`}>
-            <span className="flex items-center w-full justify-between">
-              <span className="flex items-center">
-                <FaEnvelope className="mr-2 w-5 h-5" />
-                Messages
+            <div className="flex items-center justify-between w-full">
+              <span className="flex items-center gap-2">
+                <FaEnvelope /> Messages
               </span>
               {messageCount > 0 && (
-                <span className="bg-red-500 text-white rounded-full text-xs px-2 py-0.5">
+                <span className="bg-red-600 text-white text-xs px-2 py-0.5 rounded-full">
                   {messageCount}
                 </span>
               )}
-            </span>
+            </div>
           </Link>
 
           {currentUser && isAdmin && (
             <Link to="/dashboard/post" onClick={handleLinkClick} className={`${linkBaseClasses} ${isActive("/dashboard/post") ? linkActiveClasses : linkInactiveClasses}`}>
-              <FaEdit className="inline-block mr-2 w-5 h-5" /> Add Post
+              <FaEdit /> Add Post
             </Link>
           )}
 
           <Link to="/dashboard/about" onClick={handleLinkClick} className={`${linkBaseClasses} ${isActive("/dashboard/about") ? linkActiveClasses : linkInactiveClasses}`}>
-            <FaInfoCircle className="inline-block mr-2 w-5 h-5" /> About Web
+            <FaInfoCircle /> About Web
           </Link>
 
-          <button onClick={handleLogout} className="flex items-center w-full text-left py-2.5 px-4 rounded transition-colors duration-200 hover:bg-red-100 text-red-600 dark:text-red-400 dark:hover:bg-red-700">
-            <FaSignOutAlt className="inline-block mr-2 w-5 h-5" /> Logout
+          <button onClick={handleLogout} className="flex items-center w-full text-left text-red-600 dark:text-red-400 hover:bg-red-100 dark:hover:bg-red-700 py-2.5 px-4 rounded">
+            <FaSignOutAlt className="mr-2" /> Logout
           </button>
         </nav>
 
-        <div className="px-6 py-6 border-t border-gray-200 dark:border-gray-700 flex justify-center">
-          <button onClick={toggleDarkMode} className="text-gray-700 dark:text-gray-300 flex items-center gap-2">
-            {isDarkMode ? <><FaSun size={22} /> <span className="hidden md:inline text-sm">Light Mode</span></> :
-              <><FaMoon size={22} /> <span className="hidden md:inline text-sm">Dark Mode</span></>}
+        <div className="px-6 py-5 border-t border-gray-200 dark:border-gray-700 flex justify-center">
+          <button onClick={toggleDarkMode} className="text-gray-700 dark:text-gray-300 flex items-center gap-2 text-sm">
+            {isDarkMode ? <><FaSun /> Light Mode</> : <><FaMoon /> Dark Mode</>}
           </button>
         </div>
       </aside>

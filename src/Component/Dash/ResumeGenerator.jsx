@@ -1,10 +1,11 @@
 import React, { useEffect, useState, useRef } from 'react';
 import { auth, db } from '../../firebase';
 import {
-  doc, getDoc, collection, query, where, onSnapshot, updateDoc
+  doc, getDoc, collection, query, where, onSnapshot, updateDoc,
 } from 'firebase/firestore';
 import Profile from '../../assets/profile.png';
 import html2pdf from 'html2pdf.js';
+import { toast } from 'react-toastify';
 
 function ResumeGenerator() {
   const [user, setUser] = useState(null);
@@ -33,10 +34,7 @@ function ResumeGenerator() {
       try {
         const docRef = doc(db, 'users', user.uid);
         const docSnap = await getDoc(docRef);
-
-        if (docSnap.exists()) {
-          setProfile(docSnap.data());
-        }
+        if (docSnap.exists()) setProfile(docSnap.data());
 
         const q = query(collection(db, 'portfolio'), where('userId', '==', user.uid));
         const unsubscribe = onSnapshot(q, (snapshot) => {
@@ -77,15 +75,31 @@ function ResumeGenerator() {
     setProfile((prev) => ({ ...prev, [field]: value }));
   };
 
+  const handleArrayChange = (section, index, field, value) => {
+    const updated = [...(profile[section] || [])];
+    updated[index][field] = value;
+    setProfile((prev) => ({ ...prev, [section]: updated }));
+  };
+
+  const addItemToSection = (section, template) => {
+    const current = profile[section] || [];
+    setProfile((prev) => ({ ...prev, [section]: [...current, template] }));
+  };
+
+  const deleteItemFromSection = (section, index) => {
+    const filtered = [...(profile[section] || [])].filter((_, i) => i !== index);
+    setProfile((prev) => ({ ...prev, [section]: filtered }));
+  };
+
   const saveProfile = async () => {
     if (!user) return;
     try {
       const userRef = doc(db, 'users', user.uid);
       await updateDoc(userRef, profile);
-      alert('Profile updated successfully.');
+      toast.success('Resume updated successfully');
       setEditMode(false);
     } catch (error) {
-      console.error('Update failed:', error);
+      toast.error('Update failed');
     }
   };
 
@@ -96,160 +110,193 @@ function ResumeGenerator() {
   return (
     <div className="max-w-4xl mx-auto p-6">
       <div className="text-right mb-6 space-x-3">
-        <button
-          onClick={() => setEditMode((prev) => !prev)}
-          className="px-5 py-2 border border-indigo-600 text-indigo-600 rounded hover:bg-indigo-50"
-        >
+        <button onClick={() => setEditMode(!editMode)} className="px-4 py-2 border border-indigo-600 text-indigo-600 rounded">
           {editMode ? 'Cancel' : 'Edit Resume'}
         </button>
         {editMode && (
-          <button
-            onClick={saveProfile}
-            className="px-5 py-2 bg-indigo-600 text-white rounded hover:bg-indigo-700"
-          >
+          <button onClick={saveProfile} className="px-4 py-2 bg-indigo-600 text-white rounded">
             Save Changes
           </button>
         )}
-        <button
-          onClick={handleDownloadPDF}
-          className="px-5 py-2 bg-green-600 text-white rounded hover:bg-green-700"
-        >
-          Download as PDF
+        <button onClick={handleDownloadPDF} className="px-4 py-2 bg-green-600 text-white rounded">
+          Download PDF
         </button>
       </div>
 
-      <div ref={resumeRef} className="bg-white shadow-md rounded-lg p-6">
-        {/* Profile */}
-        <div className="flex flex-col items-center mb-8">
-          <img
-            src={profile.photoURL?.trim() || Profile}
-            alt="Profile"
-            className="w-28 h-28 rounded-full object-cover border-4 border-indigo-600"
+      <div ref={resumeRef} className="bg-white shadow-lg p-6 md:p-10 rounded-lg text-gray-800 leading-relaxed">
+  {/* Profile */}
+  <div className="flex flex-col md:flex-row items-center md:items-start md:space-x-6 text-center md:text-left mb-8">
+    <img
+      src={profile.photoURL?.trim() || Profile}
+      alt="Profile"
+      className="w-24 h-24 md:w-28 md:h-28 rounded-full object-cover border-4 border-indigo-600"
+    />
+    <div className="mt-4 md:mt-0">
+      {editMode ? (
+        <>
+          <input
+            placeholder="Full Name"
+            value={profile.fullName}
+            onChange={(e) => handleProfileChange('fullName', e.target.value)}
+            className="block w-full text-xl font-bold border-b mb-1"
           />
+          <input
+            placeholder="Job Title"
+            value={profile.title}
+            onChange={(e) => handleProfileChange('title', e.target.value)}
+            className="block w-full text-indigo-600 text-sm border-b mb-2"
+          />
+          <textarea
+            placeholder="Short bio..."
+            value={profile.bio}
+            onChange={(e) => handleProfileChange('bio', e.target.value)}
+            className="text-gray-700 text-sm border rounded p-2 w-full"
+          />
+        </>
+      ) : (
+        <>
+          <h1 className="text-2xl font-bold">{profile.fullName}</h1>
+          <p className="text-indigo-600 font-medium">{profile.title}</p>
+          <p className="text-sm text-gray-600 mt-2 max-w-xl">{profile.bio}</p>
+        </>
+      )}
+    </div>
+  </div>
+
+  {/* Social Links */}
+  <section className="mb-6">
+    <h2 className="text-lg font-semibold text-indigo-700 mb-2 uppercase tracking-wide">Social Links</h2>
+    {['github', 'linkedin', 'twitter'].map((platform) => (
+      <div key={platform} className="text-sm mb-1">
+        {editMode ? (
+          <input
+            placeholder={`${platform} URL`}
+            type="text"
+            value={profile.socialLinks?.[platform] || ''}
+            onChange={(e) =>
+              setProfile((prev) => ({
+                ...prev,
+                socialLinks: { ...prev.socialLinks, [platform]: e.target.value },
+              }))
+            }
+            className="w-full border rounded p-1 mb-1"
+          />
+        ) : (
+          profile.socialLinks?.[platform] && (
+            <p>
+              <span className="font-semibold">{platform.toUpperCase()}:</span>{' '}
+              <a href={profile.socialLinks[platform]} className="text-indigo-600 underline" target="_blank" rel="noreferrer">
+                {profile.socialLinks[platform]}
+              </a>
+            </p>
+          )
+        )}
+      </div>
+    ))}
+  </section>
+
+  {/* Skills */}
+  <section className="mb-6">
+    <h2 className="text-lg font-semibold text-indigo-700 mb-2 uppercase tracking-wide">Skills</h2>
+    {editMode ? (
+      <textarea
+        placeholder="e.g. React, Firebase, Tailwind"
+        value={profile.skills?.join(', ') || ''}
+        onChange={(e) => handleProfileChange('skills', e.target.value.split(',').map((s) => s.trim()))}
+        className="w-full border rounded p-2 text-sm"
+      />
+    ) : (
+      <div className="flex flex-wrap gap-2">
+        {profile.skills?.map((skill, i) => (
+          <span key={i} className="bg-indigo-100 text-indigo-700 px-3 py-1 rounded-full text-xs md:text-sm">
+            {skill}
+          </span>
+        ))}
+      </div>
+    )}
+  </section>
+
+  {/* Dynamic Section Builder */}
+  {[
+    { title: 'Education', field: 'education', template: { degree: '', school: '', years: '' } },
+    { title: 'Experience', field: 'experience', template: { role: '', company: '', description: '' } },
+    { title: 'Certifications', field: 'certifications', template: { title: '', issuer: '', date: '' } },
+  ].map(({ title, field, template }) => (
+    <section className="mb-6" key={field}>
+      <h2 className="text-lg font-semibold text-indigo-700 mb-2 uppercase tracking-wide">{title}</h2>
+      {(profile[field] || []).map((item, i) => (
+        <div key={i} className="mb-3">
           {editMode ? (
             <>
-              <input
-                type="text"
-                value={profile.fullName}
-                onChange={(e) => handleProfileChange('fullName', e.target.value)}
-                className="mt-4 text-xl font-bold text-center border-b focus:outline-none"
-              />
-              <input
-                type="text"
-                value={profile.title}
-                onChange={(e) => handleProfileChange('title', e.target.value)}
-                className="text-indigo-600 text-sm text-center mt-1 border-b focus:outline-none"
-              />
-              <textarea
-                value={profile.bio}
-                onChange={(e) => handleProfileChange('bio', e.target.value)}
-                className="text-gray-600 text-sm text-center mt-2 border rounded p-2 w-full"
-              />
-            </>
-          ) : (
-            <>
-              <h1 className="text-2xl font-bold mt-4">{profile.fullName}</h1>
-              <p className="text-indigo-600">{profile.title}</p>
-              <p className="text-gray-600 mt-2 max-w-lg text-center">{profile.bio}</p>
-            </>
-          )}
-        </div>
-
-        {/* Social Links */}
-        <section className="mb-8">
-          <h2 className="text-lg font-semibold text-indigo-700 mb-2">Social Links</h2>
-          <div className="space-y-2">
-            {['github', 'linkedin', 'twitter'].map((platform) => (
-              <div key={platform} className="text-sm">
-                {editMode ? (
-                  <input
-                    type="text"
-                    value={profile.socialLinks?.[platform] || ''}
-                    onChange={(e) =>
-                      setProfile((prev) => ({
-                        ...prev,
-                        socialLinks: { ...prev.socialLinks, [platform]: e.target.value },
-                      }))
-                    }
-                    placeholder={`Enter ${platform} URL`}
-                    className="w-full border rounded p-1"
-                  />
-                ) : (
-                  profile.socialLinks?.[platform] && (
-                    <p>
-                      <strong>{platform.toUpperCase()}:</strong>{' '}
-                      <span className="text-indigo-600">{profile.socialLinks[platform]}</span>
-                    </p>
-                  )
-                )}
-              </div>
-            ))}
-          </div>
-        </section>
-
-        {/* Skills */}
-        <section className="mb-8">
-          <h2 className="text-lg font-semibold text-indigo-700 mb-2">Skills</h2>
-          {editMode ? (
-            <textarea
-              value={profile.skills?.join(', ') || ''}
-              onChange={(e) =>
-                setProfile((prev) => ({ ...prev, skills: e.target.value.split(',').map(s => s.trim()) }))
-              }
-              className="w-full border rounded p-2 text-sm"
-              placeholder="Comma-separated skills"
-            />
-          ) : (
-            <div className="flex flex-wrap gap-2">
-              {profile.skills?.map((skill, i) => (
-                <span
-                  key={i}
-                  className="bg-indigo-100 text-indigo-700 px-3 py-1 rounded-full text-sm"
-                >
-                  {skill}
-                </span>
+              {Object.keys(template).map((key) => (
+                <input
+                  key={key}
+                  placeholder={key.charAt(0).toUpperCase() + key.slice(1)}
+                  value={item[key]}
+                  onChange={(e) => handleArrayChange(field, i, key, e.target.value)}
+                  className="w-full border mb-1 p-1"
+                />
               ))}
+              <button onClick={() => deleteItemFromSection(field, i)} className="text-red-500 text-sm mb-2">
+                ❌ Remove
+              </button>
+            </>
+          ) : (
+            <div className="text-sm leading-snug">
+              <p className="font-semibold text-base">
+                {item.degree || item.title || item.role}
+              </p>
+              <p className="text-gray-600">
+                {item.school || item.issuer || item.company}{' '}
+                {item.years || item.date ? `(${item.years || item.date})` : ''}
+              </p>
+              {item.description && <p className="text-xs mt-1">{item.description}</p>}
             </div>
           )}
-        </section>
+        </div>
+      ))}
+      {editMode && (
+        <button onClick={() => addItemToSection(field, template)} className="text-sm text-indigo-600 mt-2">
+          + Add {title}
+        </button>
+      )}
+    </section>
+  ))}
 
-        {/* Education */}
-        <section className="mb-8">
-          <h2 className="text-lg font-semibold text-indigo-700 mb-2">Education</h2>
-          {profile.education?.length > 0 ? (
-            profile.education.map((edu, i) => (
-              <div key={i} className="mb-3">
-                <p className="font-semibold">{edu.degree}</p>
-                <p className="text-sm">{edu.school} ({edu.years})</p>
-                {edu.note && <p className="text-xs italic text-gray-600">{edu.note}</p>}
-              </div>
-            ))
-          ) : (
-            <p className="text-sm text-gray-500">No education history listed.</p>
-          )}
-        </section>
+  {/* Languages */}
+  <section className="mb-6">
+    <h2 className="text-lg font-semibold text-indigo-700 mb-2 uppercase tracking-wide">Languages</h2>
+    {editMode ? (
+      <textarea
+        placeholder="e.g. English, Spanish"
+        value={profile.languages?.join(', ') || ''}
+        onChange={(e) => handleProfileChange('languages', e.target.value.split(',').map((l) => l.trim()))}
+        className="w-full border p-2 text-sm"
+      />
+    ) : (
+      <p className="text-sm">{profile.languages?.join(', ') || 'No languages listed.'}</p>
+    )}
+  </section>
 
-        {/* Projects */}
-        <section>
-          <h2 className="text-lg font-semibold text-indigo-700 mb-2">Projects</h2>
-          {projects.length > 0 ? (
-            projects.map((proj) => (
-              <div key={proj.id} className="mb-4 border-b pb-3">
-                <h3 className="font-semibold">{proj.title}</h3>
-                <p className="text-sm text-gray-700">{proj.description}</p>
-                {proj.github && (
-                  <p className="text-sm">
-                    <strong>GitHub:</strong>{' '}
-                    <span className="text-indigo-600">{proj.github}</span>
-                  </p>
-                )}
-              </div>
-            ))
-          ) : (
-            <p className="text-sm text-gray-500">No projects found.</p>
-          )}
-        </section>
+  {/* Projects */}
+  <section className="mb-2">
+    <h2 className="text-lg font-semibold text-indigo-700 mb-2 uppercase tracking-wide">Projects</h2>
+    {projects.map((proj) => (
+      <div key={proj.id} className="mb-3">
+        <p className="font-semibold">{proj.title}</p>
+        <p className="text-sm text-gray-600">{proj.description}</p>
+        {proj.github && (
+          <a href={proj.github} className="text-sm text-indigo-600 underline" target="_blank" rel="noreferrer">
+            GitHub: {proj.github}
+          </a>
+        )}
       </div>
+    ))}
+  </section>
+  <div className='text-center text-gray-300 text-xs mt-6'>
+    <p>genrated with <i>portfolink</i> </p>
+  </div>
+</div>
     </div>
   );
 }

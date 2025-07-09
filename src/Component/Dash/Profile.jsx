@@ -1,10 +1,7 @@
 import React, { useEffect, useState, useRef } from "react";
-import { FiCamera } from 'react-icons/fi';
-import {
-  getAuth,
-  onAuthStateChanged
-} from "firebase/auth";
-import { uploadImageToBackend } from '../uploadImageToBackend'; // adjust the path based on where you place the file
+import { FiCamera } from "react-icons/fi";
+import { getAuth, onAuthStateChanged } from "firebase/auth";
+import { uploadImageToBackend } from "../uploadImageToBackend";
 import {
   doc,
   getDoc,
@@ -12,7 +9,7 @@ import {
   collection,
   getDocs,
   query,
-  where
+  where,
 } from "firebase/firestore";
 import { db } from "../../firebase";
 import moment from "moment";
@@ -25,14 +22,14 @@ function Profile() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editForm, setEditForm] = useState({
     fullName: "",
+    country: "",
     quote: "",
     skills: "",
-    photoURL: ""
+    photoURL: "",
   });
   const [uploading, setUploading] = useState(false);
   const fileInputRef = useRef(null);
   const ADMIN_UID = "msLzg2LxX7Rd3WKVwaqmhWl9KUk2";
-
   useEffect(() => {
     const auth = getAuth();
     const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
@@ -64,14 +61,15 @@ function Profile() {
           email: currentUser.email,
           photoURL: data.photoURL || currentUser.photoURL || "",
           joinedAt: currentUser.metadata?.creationTime,
-          role
+          role,
         });
 
         setEditForm({
           fullName: data.fullName || "",
+          country: data.country || "",
           quote: data.quote || "",
           skills: (data.skills || []).join(", "),
-          photoURL: data.photoURL || ""
+          photoURL: data.photoURL || "",
         });
 
         setProjectCount(projectSnap.size);
@@ -85,27 +83,25 @@ function Profile() {
 
     return () => unsubscribe();
   }, []);
-
   const handleEditChange = (e) => {
     setEditForm((prev) => ({ ...prev, [e.target.name]: e.target.value }));
   };
 
   const handlePhotoUpload = async (file) => {
-  try {
-    setUploading(true);
-    const imageUrl = await uploadImageToBackend(file);
-    if (imageUrl) {
-      setEditForm((prev) => ({ ...prev, photoURL: imageUrl }));
-      toast.success("Image uploaded!");
+    try {
+      setUploading(true);
+      const imageUrl = await uploadImageToBackend(file);
+      if (imageUrl) {
+        setEditForm((prev) => ({ ...prev, photoURL: imageUrl }));
+        toast.success("Image uploaded!");
+      }
+    } catch (error) {
+      console.error("Image upload failed:", error);
+      toast.error("Image upload failed");
+    } finally {
+      setUploading(false);
     }
-  } catch (error) {
-    console.error("Image upload failed:", error);
-    toast.error("Image upload failed");
-  } finally {
-    setUploading(false);
-  }
-};
-
+  };
 
   const handleSave = async () => {
     try {
@@ -117,10 +113,12 @@ function Profile() {
         skills: editForm.skills
           .split(",")
           .map((s) => s.trim())
-          .filter((s) => s)
+          .filter((s) => s),
       };
 
-      await setDoc(doc(db, "users", currentUser.uid), updatedData, { merge: true });
+      await setDoc(doc(db, "users", currentUser.uid), updatedData, {
+        merge: true,
+      });
 
       toast.success("Profile updated!");
       setUserData((prev) => ({ ...prev, ...updatedData }));
@@ -135,7 +133,6 @@ function Profile() {
     setEditForm((prev) => ({ ...prev, photoURL: "" }));
     toast.info("Photo will be removed when you save changes.");
   };
-
   if (loading) {
     return (
       <div className="flex flex-col justify-center items-center h-screen gap-3">
@@ -152,7 +149,6 @@ function Profile() {
       </p>
     );
   }
-
   return (
     <div className="w-full min-h-screen bg-gray-50">
       <div className="w-full h-40 bg-indigo-600 relative group">
@@ -164,7 +160,7 @@ function Profile() {
             src={
               userData.photoURL?.trim()
                 ? userData.photoURL
-                : 'https://cdn-icons-png.flaticon.com/512/149/149071.png'
+                : "https://cdn-icons-png.flaticon.com/512/149/149071.png"
             }
             alt="Profile"
             className="w-full h-full object-cover"
@@ -183,7 +179,10 @@ function Profile() {
             </h1>
             <p className="text-gray-600">{userData.email}</p>
             <p className="text-sm text-gray-400">
-              Joined {userData.joinedAt ? moment(userData.joinedAt).format("MMMM D, YYYY") : "Unknown"}
+              Joined{" "}
+              {userData.joinedAt
+                ? moment(userData.joinedAt).format("MMMM D, YYYY")
+                : "Unknown"}
             </p>
           </div>
           <button
@@ -196,18 +195,27 @@ function Profile() {
 
         <div className="bg-white p-5 rounded-lg shadow-sm mt-4 space-y-4">
           <div>
+            <p className="text-sm font-medium text-gray-500">Country:</p>
+            <p className="text-base text-gray-700">{userData.country || "Not specified"}</p>
+          </div>
+
+          <div>
             <p className="text-sm font-medium text-gray-500">Role:</p>
             <p className="text-lg font-semibold text-indigo-600">{userData.role}</p>
           </div>
 
           <div>
             <p className="text-sm font-medium text-gray-500">Skills:</p>
-            <p className="text-base text-gray-700">{(userData.skills || []).join(", ") || "Not added"}</p>
+            <p className="text-base text-gray-700">
+              {(userData.skills || []).join(", ") || "Not added"}
+            </p>
           </div>
 
           <div>
             <p className="text-sm font-medium text-gray-500">Quote / Status:</p>
-            <p className="text-base italic text-gray-600">{userData.quote || "“No quote added yet.”"}</p>
+            <p className="text-base italic text-gray-600">
+              {userData.quote || "“No quote added yet.”"}
+            </p>
           </div>
 
           <div>
@@ -218,23 +226,44 @@ function Profile() {
           <div>
             <p className="text-sm font-medium text-gray-500">Badges:</p>
             <div className="flex gap-2 mt-1">
-              <span className="bg-yellow-400 text-white text-xs px-2 py-1 rounded-full">Beginner</span>
-              <span className="bg-purple-500 text-white text-xs px-2 py-1 rounded-full">Verified</span>
+              <span className="bg-yellow-400 text-white text-xs px-2 py-1 rounded-full">
+                Beginner
+              </span>
+              {projectCount > 4 && (
+                <span className="bg-green-600 text-white text-xs px-2 py-1 rounded-full">
+                  Contributor
+                </span>
+              )}
+              {userData.role === "Admin" && (
+                <span className="bg-purple-600 text-white text-xs px-2 py-1 rounded-full">
+                  Admin
+                </span>
+              )}
             </div>
           </div>
         </div>
       </div>
-
       {isModalOpen && (
         <div className="fixed inset-0 z-50 bg-black bg-opacity-40 flex justify-center items-center px-4">
           <div className="bg-white w-full max-w-md rounded-xl p-6">
-            <h2 className="text-lg font-semibold text-gray-800 mb-4">Edit Profile</h2>
+            <h2 className="text-lg font-semibold text-gray-800 mb-4">
+              Edit Profile
+            </h2>
 
             <input
               type="text"
               name="fullName"
               placeholder="Full Name"
               value={editForm.fullName}
+              onChange={handleEditChange}
+              className="w-full border rounded px-4 py-2 mb-3"
+            />
+
+            <input
+              type="text"
+              name="country"
+              placeholder="Country"
+              value={editForm.country}
               onChange={handleEditChange}
               className="w-full border rounded px-4 py-2 mb-3"
             />

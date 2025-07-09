@@ -160,12 +160,12 @@ A: Yes. Your login and portfolio are secured with Firebase Authentication and Fi
           }}
           className="bg-gradient-to-r from-blue-600 to-indigo-600 text-white px-4 py-2 rounded-full shadow-xl hover:scale-105 transition"
         >
-          💬 Chat
+          Chat AI
         </button>
       ) : (
-        <div className={`${containerSize} bg-white dark:bg-gray-900 rounded-2xl shadow-2xl flex flex-col p-4 border border-blue-500 flex-1`}>
+        <div className={`${containerSize} bg-white rounded-2xl shadow-2xl flex flex-col p-4 border border-blue-500 flex-1`}>
           <div className="flex justify-between items-center mb-3">
-            <h2 className="text-lg font-semibold text-gray-800 dark:text-white flex">
+            <h2 className="text-lg font-semibold text-gray-800 flex">
               <img className="h-7 w-7" src={logo} alt="" />
               &nbsp;AI Chat Assistant
             </h2>
@@ -193,15 +193,15 @@ A: Yes. Your login and portfolio are secured with Firebase Authentication and Fi
               return (
                 <div key={i} className={`flex items-start gap-2 ${msg.sender === 'user' ? 'justify-end' : 'justify-start'}`}>
                   {isAI && (
-                    <div className="bg-gray-200 dark:bg-gray-700 rounded-full p-1">
-                      <Bot className="w-4 h-4 text-gray-600 dark:text-gray-200" />
+                    <div className="bg-gray-200 rounded-full p-1">
+                      <Bot className="w-4 h-4 text-gray-600" />
                     </div>
                   )}
                   <div
                     className={`px-4 py-2 max-w-[75%] rounded-xl text-sm transition-all duration-300 ${
                       msg.sender === 'user'
                         ? 'bg-blue-600 text-white rounded-br-none'
-                        : 'bg-indigo-100 text-gray-900 dark:bg-indigo-700 dark:text-gray-100 rounded-bl-none'
+                        : 'bg-indigo-100 text-gray-900 rounded-bl-none'
                     }`}
                   >
                     {isAI && isLast && typing ? displayedText : msg.text}
@@ -217,7 +217,7 @@ A: Yes. Your login and portfolio are secured with Firebase Authentication and Fi
 
             {typing && displayedText === '' && (
               <div className="flex items-center gap-2">
-                <div className="bg-gray-300 dark:bg-gray-700 px-3 py-1 rounded-xl text-sm text-gray-700 dark:text-gray-100">
+                <div className="bg-gray-300 px-3 py-1 rounded-xl text-sm text-gray-700">
                   <span className="animate-pulse">AI is typing...</span>
                 </div>
               </div>
@@ -229,7 +229,7 @@ A: Yes. Your login and portfolio are secured with Firebase Authentication and Fi
               ref={inputRef}
               type="text"
               placeholder="Ask something..."
-              className="flex-1 px-3 py-2 rounded-xl border border-gray-300 dark:border-gray-700 bg-gray-100 dark:bg-gray-800 text-sm focus:outline-none"
+              className="flex-1 px-3 py-2 rounded-xl border border-gray-300 text-sm focus:outline-none"
               value={input}
               onChange={(e) => setInput(e.target.value)}
               onKeyDown={(e) => e.key === 'Enter' && handleSend()}
