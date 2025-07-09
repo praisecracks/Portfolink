@@ -11,7 +11,7 @@ import {
   Maximize2,
   Minimize2,
 } from 'lucide-react';
-import logo from '../../assets/portlogo.png'
+import logo from '../../assets/portlogo.png';
 
 function Chat() {
   const [input, setInput] = useState('');
@@ -22,7 +22,41 @@ function Chat() {
   const [displayedText, setDisplayedText] = useState('');
   const [voiceEnabled, setVoiceEnabled] = useState(true);
   const [maximized, setMaximized] = useState(false);
+
   const fileRef = useRef(null);
+  const chatRef = useRef(null);
+  const inputRef = useRef(null);
+
+
+const faqContext = `
+About the Developer:
+Portfolink was created by a Nigerian web developer known as Praisecrack. 
+The name "Praisecrack" combines "Praise" (his name) and "crack" (his ability to crack problems in web development with affordable solutions).
+
+About the App:
+Portfolink is a web app for building, managing, and sharing developer portfolios.
+Features include:
+- Adding and editing projects
+- AI-generated descriptions
+- Firebase-authenticated login
+- Resume export and shareable portfolio links
+
+Frequently Asked Questions:
+
+Q: Who is Praisecrack?
+A: Praisecrack is a full-stack web developer who builds modern, clean, responsive web applications with great UI/UX.
+
+Q: What can I use Portfolink for?
+A: To manage your projects, create AI-written summaries, build a resume, and share your work online.
+
+Q: Can I use AI to help write my project summary?
+A: Yes. Just enter a title and tags, then click "AI Generate Description."
+
+Q: Will my data be safe?
+A: Yes. Your login and portfolio are secured with Firebase Authentication and Firestore rules.
+`;
+
+
 
   useEffect(() => {
     const saved = localStorage.getItem('ai_chat');
@@ -32,6 +66,12 @@ function Chat() {
   useEffect(() => {
     localStorage.setItem('ai_chat', JSON.stringify(chat));
   }, [chat]);
+
+  useEffect(() => {
+    if (chatRef.current) {
+      chatRef.current.scrollTop = chatRef.current.scrollHeight;
+    }
+  }, [chat, displayedText]);
 
   const speak = (text) => {
     if ('speechSynthesis' in window && voiceEnabled) {
@@ -65,9 +105,19 @@ function Chat() {
     setDisplayedText('');
 
     try {
-      const res = await axios.post('https://portfolink-backend.onrender.com/ai', {
-        prompt: input,
-      });
+        const res = await axios.post('https://portfolink-backend.onrender.com/ai', {
+          prompt: `
+        You are a helpful assistant for a web app called Portfolink.
+
+        Only use the information provided in the FAQ and app context below. Do NOT use any external or pre-learned knowledge about the developer or the app.
+
+        ${faqContext}
+
+        User: ${input.trim()}
+        Assistant:
+          `.trim()
+        });
+
 
       const aiText = res.data.description || '🤖 No response from AI.';
       const aiMsg = { sender: 'ai', text: '' };
@@ -104,47 +154,38 @@ function Chat() {
     <div className={`fixed z-50 ${maximized ? 'inset-0' : 'bottom-6 right-6'}`}>
       {!open ? (
         <button
-          onClick={() => setOpen(true)}
-          className="bg-gradient-to-r from-blue-600 to-indigo-600 text-white px-4 py-2 rounded-full shadow-xl hover:scale-105 transition "
+          onClick={() => {
+            setOpen(true);
+            setTimeout(() => inputRef.current?.focus(), 100);
+          }}
+          className="bg-gradient-to-r from-blue-600 to-indigo-600 text-white px-4 py-2 rounded-full shadow-xl hover:scale-105 transition"
         >
           💬 Chat
         </button>
       ) : (
-        <div className={`${containerSize} bg-white dark:bg-gray-900 rounded-2xl shadow-2xl flex flex-col p-4 border border-blue-500 flex-1 overflow-y-auto space-y-3 mb-2 px-1`}>
-          <div className="flex justify-between items-center mb-3 ">
-            <h2 className="text-lg font-semibold text-gray-800 dark:text-white flex"><img className='h-7 w-7' src={logo} alt="" />  AI Chat Assistant</h2>
+        <div className={`${containerSize} bg-white dark:bg-gray-900 rounded-2xl shadow-2xl flex flex-col p-4 border border-blue-500 flex-1`}>
+          <div className="flex justify-between items-center mb-3">
+            <h2 className="text-lg font-semibold text-gray-800 dark:text-white flex">
+              <img className="h-7 w-7" src={logo} alt="" />
+              &nbsp;AI Chat Assistant
+            </h2>
             <div className="flex items-center gap-2">
-              <button
-                onClick={() => setVoiceEnabled(!voiceEnabled)}
-                className="text-gray-500 hover:text-blue-500"
-                title={voiceEnabled ? 'Disable voice' : 'Enable voice'}
-              >
+              <button onClick={() => setVoiceEnabled(!voiceEnabled)} title="Toggle voice">
                 {voiceEnabled ? <Volume2 size={18} /> : <VolumeX size={18} />}
               </button>
-              <button
-                onClick={() => setMaximized(!maximized)}
-                className="text-gray-500 hover:text-purple-600"
-                title={maximized ? 'Minimize chat' : 'Maximize chat'}
-              >
+              <button onClick={() => setMaximized(!maximized)} title="Toggle maximize">
                 {maximized ? <Minimize2 size={18} /> : <Maximize2 size={18} />}
               </button>
-              <button
-                onClick={clearChat}
-                className="text-gray-500 hover:text-red-600"
-                title="Clear chat"
-              >
+              <button onClick={clearChat} title="Clear chat">
                 <Trash2 size={18} />
               </button>
-              <button
-                onClick={() => setOpen(false)}
-                className="text-gray-500 hover:text-red-500 text-sm"
-              >
+              <button onClick={() => setOpen(false)} className="text-sm text-red-500">
                 ✖
               </button>
             </div>
           </div>
 
-          <div className="flex-1 overflow-y-auto space-y-3 mb-2 px-1 custom-scrollbar">
+          <div ref={chatRef} className="flex-1 overflow-y-auto space-y-3 mb-2 px-1 custom-scrollbar">
             {chat.map((msg, i) => {
               const isLast = i === chat.length - 1;
               const isAI = msg.sender === 'ai';
@@ -185,6 +226,7 @@ function Chat() {
 
           <div className="flex items-center gap-2 mt-2">
             <input
+              ref={inputRef}
               type="text"
               placeholder="Ask something..."
               className="flex-1 px-3 py-2 rounded-xl border border-gray-300 dark:border-gray-700 bg-gray-100 dark:bg-gray-800 text-sm focus:outline-none"

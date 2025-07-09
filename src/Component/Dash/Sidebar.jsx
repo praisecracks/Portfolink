@@ -8,12 +8,7 @@ import {
 import { signOut } from 'firebase/auth';
 import { auth, db } from '../../firebase';
 import { toast } from 'react-toastify';
-import {
-  collection,
-  getDoc,
-  onSnapshot,
-  query
-} from 'firebase/firestore';
+import { collection, onSnapshot, query } from 'firebase/firestore';
 
 function Sidebar({ sidebarOpen, setSidebarOpen }) {
   const navigate = useNavigate();
@@ -24,37 +19,28 @@ function Sidebar({ sidebarOpen, setSidebarOpen }) {
   const [isDarkMode, setIsDarkMode] = useState(false);
   const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
   const [messageCount, setMessageCount] = useState(0);
+  const [portfolioOpen, setPortfolioOpen] = useState(false);
   const lastMessageRef = useRef(null);
 
-  // 🔔 Request permission for browser notifications
   useEffect(() => {
-    if (Notification.permission !== "granted") {
-      Notification.requestPermission();
-    }
+    if (Notification.permission !== "granted") Notification.requestPermission();
   }, []);
 
-  // ✅ Listen for new messages and trigger alert
   useEffect(() => {
     if (!currentUser) return;
-
     const q = query(collection(db, `messages/${currentUser.uid}/inbox`));
     const unsubscribe = onSnapshot(q, (snapshot) => {
       const msgs = snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
       const unread = msgs.filter(msg => !msg.readAt);
       setMessageCount(unread.length);
 
-      // 🔔 Detect new message
       const latestMsg = msgs[msgs.length - 1];
-      if (
-        latestMsg &&
-        latestMsg.message !== lastMessageRef.current?.message
-      ) {
+      if (latestMsg && latestMsg.message !== lastMessageRef.current?.message) {
         notifyUser(latestMsg.name, latestMsg.message);
         playSound();
         lastMessageRef.current = latestMsg;
       }
     });
-
     return () => unsubscribe();
   }, [currentUser]);
 
@@ -68,18 +54,16 @@ function Sidebar({ sidebarOpen, setSidebarOpen }) {
   };
 
   const playSound = () => {
-    const audio = new Audio("/notification.mp3"); // ✅ Make sure this file exists in public/
+    const audio = new Audio("/notification.mp3");
     audio.play().catch(err => console.log("Audio play failed:", err));
   };
 
-  // 🔐 Set Admin Mode
   useEffect(() => {
     if (!currentUser) return;
     const adminUID = 'msLzg2LxX7Rd3WKVwaqmhWl9KUk2';
     setIsAdmin(currentUser.uid === adminUID);
   }, [currentUser]);
 
-  // 🎨 Theme
   useEffect(() => {
     const savedTheme = localStorage.getItem('theme');
     const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
@@ -136,7 +120,7 @@ function Sidebar({ sidebarOpen, setSidebarOpen }) {
       )}
 
       <aside
-        className={`bg-white shadow-md w-64 space-y-6 py-7 px-2 absolute inset-y-0 left-0 transform ${
+        className={`bg-white shadow-md w-64 py-4 px-2 overflow-y-auto max-h-screen absolute inset-y-0 left-0 transform ${
           sidebarOpen ? "translate-x-0" : "-translate-x-full"
         } md:relative md:translate-x-0 transition-transform duration-200 ease-in-out z-50 dark:bg-gray-900`}
         aria-label="Sidebar navigation"
@@ -160,9 +144,40 @@ function Sidebar({ sidebarOpen, setSidebarOpen }) {
           <Link to="/dashboard/profile" onClick={handleLinkClick} className={`${linkBaseClasses} ${isActive("/dashboard/profile") ? linkActiveClasses : linkInactiveClasses}`}>
             <FaUser className="inline-block mr-2 w-5 h-5" /> Profile
           </Link>
-          <Link to="/dashboard/portfolio" onClick={handleLinkClick} className={`${linkBaseClasses} ${isActive("/dashboard/portfolio") ? linkActiveClasses : linkInactiveClasses}`}>
-            <FaIdBadge className="inline-block mr-2 w-5 h-5" /> Portfolio
-          </Link>
+
+          {/* Portfolio Dropdown */}
+          <div>
+            <button
+              onClick={() => setPortfolioOpen(!portfolioOpen)}
+              className={`${linkBaseClasses} ${location.pathname.startsWith("/dashboard/portfolio") ? linkActiveClasses : linkInactiveClasses} flex justify-between w-full`}
+            >
+              <span className="flex items-center">
+                <FaIdBadge className="mr-2 w-5 h-5" />
+                Portfolio
+              </span>
+              <span className="ml-auto text-sm">{portfolioOpen ? '▲' : '▼'}</span>
+            </button>
+
+            {portfolioOpen && (
+              <div className="ml-6 mt-1 space-y-1 transition-all duration-200">
+                <Link
+                  to="/dashboard/portfolio"
+                  onClick={handleLinkClick}
+                  className={`${linkBaseClasses} ${isActive("/dashboard/portfolio") ? linkActiveClasses : linkInactiveClasses}`}
+                >
+                  View/Edit Portfolio
+                </Link>
+                <Link
+                  to="/dashboard/portfolio/resume"
+                  onClick={handleLinkClick}
+                  className={`${linkBaseClasses} ${isActive("/dashboard/portfolio/resume") ? linkActiveClasses : linkInactiveClasses}`}
+                >
+                  Generate Resume
+                </Link>
+              </div>
+            )}
+          </div>
+
           <Link to="/dashboard/projects" onClick={handleLinkClick} className={`${linkBaseClasses} ${isActive("/dashboard/projects") ? linkActiveClasses : linkInactiveClasses}`}>
             <FaProjectDiagram className="inline-block mr-2 w-5 h-5" /> Projects
           </Link>
@@ -183,19 +198,16 @@ function Sidebar({ sidebarOpen, setSidebarOpen }) {
 
           {currentUser && isAdmin && (
             <Link to="/dashboard/post" onClick={handleLinkClick} className={`${linkBaseClasses} ${isActive("/dashboard/post") ? linkActiveClasses : linkInactiveClasses}`}>
-              <FaEdit className="inline-block mr-2 w-5 h-5" />
-              Add Post
+              <FaEdit className="inline-block mr-2 w-5 h-5" /> Add Post
             </Link>
           )}
 
           <Link to="/dashboard/about" onClick={handleLinkClick} className={`${linkBaseClasses} ${isActive("/dashboard/about") ? linkActiveClasses : linkInactiveClasses}`}>
-            <FaInfoCircle className="inline-block mr-2 w-5 h-5" />
-            About Web
+            <FaInfoCircle className="inline-block mr-2 w-5 h-5" /> About Web
           </Link>
 
           <button onClick={handleLogout} className="flex items-center w-full text-left py-2.5 px-4 rounded transition-colors duration-200 hover:bg-red-100 text-red-600 dark:text-red-400 dark:hover:bg-red-700">
-            <FaSignOutAlt className="inline-block mr-2 w-5 h-5" />
-            Logout
+            <FaSignOutAlt className="inline-block mr-2 w-5 h-5" /> Logout
           </button>
         </nav>
 

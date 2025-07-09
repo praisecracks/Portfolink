@@ -17,6 +17,7 @@ import About from "./Component/Dash/About.jsx";
 import Post from "./Component/Dash/Post.jsx";
 import Messages from "./Component/Dash/Message.jsx";
 import Chat from "./Component/Dash/Chat.jsx";
+import ResumeGenerator from "./Component/Dash/ResumeGenerator.jsx";
 
 function App() {
   const location = useLocation();
@@ -25,12 +26,10 @@ function App() {
     <>
       <AnimatePresence mode="wait">
         
-    <Routes location={location} key={location.pathname}>
+   <Routes location={location} key={location.pathname}>
   <Route path='/' element={<Home />} />
   <Route path='/register' element={<Register />} />
   <Route path='/login' element={<Login />} />
-
-  {/* Public portfolio view route */}
   <Route path='/portfolio/:uid' element={<PortfolioView />} />
 
   <Route path='/dashboard' element={<DashboardLayout />}>
@@ -38,13 +37,14 @@ function App() {
     <Route path='profile' element={<Profile />} />
     <Route path='projects' element={<Projects />} />
     <Route path='portfolio' element={<Portfolio />} />
-        <Route path='about' element={<About/>} />
-       <Route path='post' element={<Post/>} />
-    <Route path='messages' element={<Messages />} /> 
-    <Route path='chat' element={<Chat/>} /> 
-\
+    <Route path='portfolio/resume' element={<ResumeGenerator />} />
+    <Route path='about' element={<About />} />
+    <Route path='post' element={<Post />} />
+    <Route path='messages' element={<Messages />} />
+    <Route path='chat' element={<Chat />} />
   </Route>
 </Routes>
+
 
 
 

@@ -457,7 +457,18 @@ function Projects() {
 
     setGenerating(true);
     try {
-      const prompt = `${formData.title}, ${formData.tags}`;
+          const prompt = `
+          You're an AI assistant inside a portfolio builder app called Portfolink.
+
+          Your task is to generate a short, clean, resume-ready project description based on a title and optional tags.
+
+          Respond only with the description. Do not mention Portfolink, the user, or yourself.
+
+          Project Title: ${formData.title}
+          Tags: ${formData.tags}
+
+          Description:
+          `.trim();
       const aiDesc = await generateDescription(prompt);
 
       if (!aiDesc || aiDesc.trim().length < 10) {
