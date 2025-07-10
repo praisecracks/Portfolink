@@ -11,7 +11,7 @@ import {
   Maximize2,
   Minimize2,
 } from 'lucide-react';
-import logo from '../../assets/portlogo.png';
+import logo from '../../assets/portLogo.png';
 
 function Chat() {
   const [input, setInput] = useState('');

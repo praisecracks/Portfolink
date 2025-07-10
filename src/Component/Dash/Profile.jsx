@@ -192,7 +192,7 @@ function Profile() {
           </button>
         </div>
 
-        <div className="bg-white dark:bg-gray-800 p-5 rounded-lg shadow-sm space-y-4">
+        <div className="bg-white dark:bg-gray-800 p-3 rounded-lg shadow-sm space-y-4">
           <Info label="Country" value={userData.country || "Not specified"} />
           <Info label="Role" value={userData.role} className="text-indigo-600 dark:text-indigo-400 font-semibold" />
           <Info label="Skills" value={(userData.skills || []).join(", ") || "Not added"} />
