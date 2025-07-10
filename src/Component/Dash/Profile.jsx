@@ -30,6 +30,7 @@ function Profile() {
   const [uploading, setUploading] = useState(false);
   const fileInputRef = useRef(null);
   const ADMIN_UID = "msLzg2LxX7Rd3WKVwaqmhWl9KUk2";
+
   useEffect(() => {
     const auth = getAuth();
     const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
@@ -83,6 +84,7 @@ function Profile() {
 
     return () => unsubscribe();
   }, []);
+
   const handleEditChange = (e) => {
     setEditForm((prev) => ({ ...prev, [e.target.name]: e.target.value }));
   };
@@ -133,27 +135,29 @@ function Profile() {
     setEditForm((prev) => ({ ...prev, photoURL: "" }));
     toast.info("Photo will be removed when you save changes.");
   };
+
   if (loading) {
     return (
       <div className="flex flex-col justify-center items-center h-screen gap-3">
         <div className="w-12 h-12 border-4 border-indigo-500 border-t-transparent rounded-full animate-spin"></div>
-        <p className="text-sm text-gray-500">Fetching profile data...</p>
+        <p className="text-sm text-gray-500 dark:text-gray-300">Fetching profile data...</p>
       </div>
     );
   }
 
   if (!userData) {
     return (
-      <p className="text-center mt-10 text-gray-500">
+      <p className="text-center mt-10 text-gray-500 dark:text-gray-400">
         No profile data found. Please update your profile.
       </p>
     );
   }
+
   return (
-    <div className="w-full min-h-screen bg-gray-50">
+    <div className="w-full min-h-screen bg-gray-50 dark:bg-gray-900 text-gray-800 dark:text-gray-100">
       <div className="w-full h-40 bg-indigo-600 relative group">
         <div
-          className="absolute left-6 -bottom-14 w-28 h-28 rounded-full border-4 border-white bg-gray-200 overflow-hidden shadow-lg group-hover:opacity-90 transition cursor-pointer"
+          className="absolute left-6 -bottom-14 w-28 h-28 rounded-full border-4 border-white dark:border-gray-900 bg-gray-200 overflow-hidden shadow-lg group-hover:opacity-90 transition cursor-pointer"
           onClick={() => setIsModalOpen(true)}
         >
           <img
@@ -174,116 +178,57 @@ function Profile() {
       <div className="pt-20 px-6">
         <div className="flex justify-between items-center mb-4">
           <div>
-            <h1 className="text-2xl font-bold text-gray-800">
-              {userData.fullName || "Unnamed User"}
-            </h1>
-            <p className="text-gray-600">{userData.email}</p>
+            <h1 className="text-2xl font-bold">{userData.fullName || "Unnamed User"}</h1>
+            <p className="text-gray-600 dark:text-gray-400">{userData.email}</p>
             <p className="text-sm text-gray-400">
-              Joined{" "}
-              {userData.joinedAt
-                ? moment(userData.joinedAt).format("MMMM D, YYYY")
-                : "Unknown"}
+              Joined {userData.joinedAt ? moment(userData.joinedAt).format("MMMM D, YYYY") : "Unknown"}
             </p>
           </div>
           <button
             onClick={() => setIsModalOpen(true)}
-            className="bg-indigo-600 text-white px-4 py-2 rounded-md text-sm hover:bg-indigo-700 transition"
+            className="bg-indigo-600 text-white px-4 py-2 rounded-md text-sm hover:bg-indigo-700 dark:hover:bg-indigo-500 transition"
           >
             Edit Profile
           </button>
         </div>
 
-        <div className="bg-white p-5 rounded-lg shadow-sm mt-4 space-y-4">
+        <div className="bg-white dark:bg-gray-800 p-5 rounded-lg shadow-sm space-y-4">
+          <Info label="Country" value={userData.country || "Not specified"} />
+          <Info label="Role" value={userData.role} className="text-indigo-600 dark:text-indigo-400 font-semibold" />
+          <Info label="Skills" value={(userData.skills || []).join(", ") || "Not added"} />
+          <Info label="Quote / Status" value={userData.quote || "“No quote added yet.”"} italic />
+          <Info label="Projects Uploaded" value={projectCount} className="font-semibold" />
           <div>
-            <p className="text-sm font-medium text-gray-500">Country:</p>
-            <p className="text-base text-gray-700">{userData.country || "Not specified"}</p>
-          </div>
-
-          <div>
-            <p className="text-sm font-medium text-gray-500">Role:</p>
-            <p className="text-lg font-semibold text-indigo-600">{userData.role}</p>
-          </div>
-
-          <div>
-            <p className="text-sm font-medium text-gray-500">Skills:</p>
-            <p className="text-base text-gray-700">
-              {(userData.skills || []).join(", ") || "Not added"}
-            </p>
-          </div>
-
-          <div>
-            <p className="text-sm font-medium text-gray-500">Quote / Status:</p>
-            <p className="text-base italic text-gray-600">
-              {userData.quote || "“No quote added yet.”"}
-            </p>
-          </div>
-
-          <div>
-            <p className="text-sm font-medium text-gray-500">Projects Uploaded:</p>
-            <p className="text-lg font-semibold text-gray-800">{projectCount}</p>
-          </div>
-
-          <div>
-            <p className="text-sm font-medium text-gray-500">Badges:</p>
+            <p className="text-sm font-medium text-gray-500 dark:text-gray-400">Badges:</p>
             <div className="flex gap-2 mt-1">
-              <span className="bg-yellow-400 text-white text-xs px-2 py-1 rounded-full">
-                Beginner
-              </span>
+              <span className="bg-yellow-400 text-white text-xs px-2 py-1 rounded-full">Beginner</span>
               {projectCount > 4 && (
-                <span className="bg-green-600 text-white text-xs px-2 py-1 rounded-full">
-                  Contributor
-                </span>
+                <span className="bg-green-600 text-white text-xs px-2 py-1 rounded-full">Contributor</span>
               )}
               {userData.role === "Admin" && (
-                <span className="bg-purple-600 text-white text-xs px-2 py-1 rounded-full">
-                  Admin
-                </span>
+                <span className="bg-purple-600 text-white text-xs px-2 py-1 rounded-full">Admin</span>
               )}
             </div>
           </div>
         </div>
       </div>
+
       {isModalOpen && (
         <div className="fixed inset-0 z-50 bg-black bg-opacity-40 flex justify-center items-center px-4">
-          <div className="bg-white w-full max-w-md rounded-xl p-6">
-            <h2 className="text-lg font-semibold text-gray-800 mb-4">
-              Edit Profile
-            </h2>
+          <div className="bg-white dark:bg-gray-800 w-full max-w-md rounded-xl p-6 text-gray-800 dark:text-gray-100">
+            <h2 className="text-lg font-semibold mb-4">Edit Profile</h2>
 
-            <input
-              type="text"
-              name="fullName"
-              placeholder="Full Name"
-              value={editForm.fullName}
-              onChange={handleEditChange}
-              className="w-full border rounded px-4 py-2 mb-3"
-            />
-
-            <input
-              type="text"
-              name="country"
-              placeholder="Country"
-              value={editForm.country}
-              onChange={handleEditChange}
-              className="w-full border rounded px-4 py-2 mb-3"
-            />
-
-            <textarea
-              name="quote"
-              placeholder="Personal Quote or Status"
-              value={editForm.quote}
-              onChange={handleEditChange}
-              className="w-full border rounded px-4 py-2 mb-3"
-            />
-
-            <input
-              type="text"
-              name="skills"
-              placeholder="Skills (comma-separated)"
-              value={editForm.skills}
-              onChange={handleEditChange}
-              className="w-full border rounded px-4 py-2 mb-3"
-            />
+            {["fullName", "country", "quote", "skills"].map((field) => (
+              <input
+                key={field}
+                type={field === "quote" ? "textarea" : "text"}
+                name={field}
+                placeholder={field.charAt(0).toUpperCase() + field.slice(1).replace(/([A-Z])/g, ' $1')}
+                value={editForm[field]}
+                onChange={handleEditChange}
+                className="w-full border dark:border-gray-600 dark:bg-gray-900 rounded px-4 py-2 mb-3"
+              />
+            ))}
 
             <input
               type="file"
@@ -295,7 +240,7 @@ function Profile() {
 
             <button
               onClick={() => fileInputRef.current.click()}
-              className="bg-blue-500 text-white px-4 py-2 rounded text-sm hover:bg-blue-600 mb-3"
+              className="bg-blue-500 text-white px-4 py-2 rounded text-sm hover:bg-blue-600 mb-3 disabled:opacity-50"
               disabled={uploading}
             >
               {uploading ? "Uploading..." : "Upload New Photo"}
@@ -310,7 +255,7 @@ function Profile() {
                 />
                 <button
                   onClick={handleDeletePhoto}
-                  className="text-xs text-red-600 underline"
+                  className="text-xs text-red-600 dark:text-red-400 underline"
                 >
                   Remove Photo
                 </button>
@@ -320,13 +265,13 @@ function Profile() {
             <div className="flex justify-end gap-2">
               <button
                 onClick={() => setIsModalOpen(false)}
-                className="bg-gray-200 px-4 py-2 rounded text-sm"
+                className="bg-gray-200 dark:bg-gray-700 px-4 py-2 rounded text-sm"
               >
                 Cancel
               </button>
               <button
                 onClick={handleSave}
-                className="bg-indigo-600 text-white px-4 py-2 rounded text-sm hover:bg-indigo-700"
+                className="bg-indigo-600 text-white px-4 py-2 rounded text-sm hover:bg-indigo-700 dark:hover:bg-indigo-500"
               >
                 Save Changes
               </button>
@@ -337,5 +282,12 @@ function Profile() {
     </div>
   );
 }
+
+const Info = ({ label, value, className = "", italic = false }) => (
+  <div>
+    <p className="text-sm font-medium text-gray-500 dark:text-gray-400">{label}:</p>
+    <p className={`text-base ${className} ${italic ? "italic" : ""}`}>{value}</p>
+  </div>
+);
 
 export default Profile;

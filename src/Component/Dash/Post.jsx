@@ -148,19 +148,19 @@ function PostManagement() {
   }
 
   return (
-    <div className="max-w-4xl mx-auto p-6 rounded">
-      <h2 className="text-3xl font-semibold mb-6 text-indigo-700">
+    <div className="max-w-4xl mx-auto p-6 rounded bg-white dark:bg-gray-900 text-gray-800 dark:text-gray-100">
+      <h2 className="text-3xl font-semibold mb-6 text-indigo-700 dark:text-indigo-400">
         {editingPostId ? 'Edit Post' : 'Create New Post'}
       </h2>
 
       <form onSubmit={handleSubmit} className="space-y-6 mb-10">
         <div>
-          <label htmlFor="title" className="block font-medium mb-1 text-gray-700">Title *</label>
+          <label htmlFor="title" className="block font-medium mb-1 text-gray-700 dark:text-gray-200">Title *</label>
           <input
             id="title"
             type="text"
-            placeholder='Post title...'
-            className="w-full px-4 py-2 rounded border border-gray-300"
+            placeholder="Post title..."
+            className="w-full px-4 py-2 rounded border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-800 dark:text-gray-100"
             value={title}
             onChange={(e) => setTitle(e.target.value)}
             required
@@ -168,12 +168,12 @@ function PostManagement() {
         </div>
 
         <div>
-          <label htmlFor="content" className="block font-medium mb-1 text-gray-700">Content *</label>
+          <label htmlFor="content" className="block font-medium mb-1 text-gray-700 dark:text-gray-200">Content *</label>
           <textarea
             id="content"
             rows="6"
-            placeholder='Write announcement or blog post here...'
-            className="w-full px-4 py-2 rounded border border-gray-300"
+            placeholder="Write announcement or blog post here..."
+            className="w-full px-4 py-2 rounded border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-800 dark:text-gray-100"
             value={content}
             onChange={(e) => setContent(e.target.value)}
             required
@@ -181,13 +181,13 @@ function PostManagement() {
         </div>
 
         <div>
-          <label htmlFor="imageUpload" className="block font-medium mb-1 text-gray-700">Upload Image (optional)</label>
+          <label htmlFor="imageUpload" className="block font-medium mb-1 text-gray-700 dark:text-gray-200">Upload Image (optional)</label>
           <input
             id="imageUpload"
             type="file"
             accept="image/*"
             onChange={(e) => setImageFile(e.target.files[0])}
-            className="w-full px-4 py-2 rounded border border-gray-300"
+            className="w-full px-4 py-2 rounded border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-800 dark:text-gray-100"
           />
         </div>
 
@@ -204,7 +204,7 @@ function PostManagement() {
             <button
               type="button"
               onClick={cancelEdit}
-              className="py-3 px-6 rounded bg-gray-300 text-gray-700 hover:bg-gray-400"
+              className="py-3 px-6 rounded bg-gray-300 dark:bg-gray-700 text-gray-700 dark:text-white hover:bg-gray-400 dark:hover:bg-gray-600"
             >
               Cancel
             </button>
@@ -212,25 +212,23 @@ function PostManagement() {
         </div>
       </form>
 
-      <h3 className="text-2xl font-semibold mb-4 text-indigo-700">Your Posts</h3>
+      <h3 className="text-2xl font-semibold mb-4 text-indigo-700 dark:text-indigo-400">Your Posts</h3>
 
       {loadingPosts ? (
-        <p className="text-gray-500">Loading posts...</p>
+        <p className="text-gray-500 dark:text-gray-400">Loading posts...</p>
       ) : posts.length === 0 ? (
-        <p className="text-gray-500">No posts found. Create your first announcement above.</p>
+        <p className="text-gray-500 dark:text-gray-400">No posts found. Create your first announcement above.</p>
       ) : (
         <ul className="space-y-4">
           {posts.map(post => (
-            <li key={post.id} className="p-4 bg-blue-900 rounded-md flex justify-between items-center">
-              <div>
-                <h4 className="text-lg font-semibold text-gray-100 mb-4">{post.title}</h4>
-                <p className="text-sm text-gray-300 line-clamp-2">{post.content}</p>
-                <small className="text-xs text-gray-400">
-                  {post.createdAt?.toDate
-                    ? post.createdAt.toDate().toLocaleString()
-                    : 'Just now'}
-                </small><br />
-                <small className='text-green-500'>status: posted</small>
+            <li key={post.id} className="p-4 bg-blue-900 dark:bg-gray-800 rounded-md flex justify-between items-start flex-col sm:flex-row">
+              <div className="mb-4 sm:mb-0 sm:mr-4">
+                <h4 className="text-lg font-semibold text-white">{post.title}</h4>
+                <p className="text-sm text-gray-300 dark:text-gray-400 line-clamp-2">{post.content}</p>
+                <small className="text-xs text-gray-300 dark:text-gray-500 block mt-2">
+                  {post.createdAt?.toDate ? post.createdAt.toDate().toLocaleString() : 'Just now'}
+                </small>
+                <small className="text-green-500">status: posted</small>
               </div>
               <div className="flex gap-2">
                 <button
@@ -250,7 +248,7 @@ function PostManagement() {
           ))}
         </ul>
       )}
-      <Chat/>
+      <Chat />
     </div>
   );
 }

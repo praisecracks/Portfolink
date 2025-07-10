@@ -4,7 +4,7 @@ import { doc, getDoc, collection, query, where, getDocs, addDoc } from 'firebase
 import { db } from '../../firebase';
 import Profile from '../../assets/profile.png';
 import {
-  FaExternalLinkAlt, FaGithub, FaLinkedin, FaTwitter, FaPrint,
+  FaExternalLinkAlt, FaGithub, FaLinkedin, FaInstagram, FaTwitter, FaPrint,
   FaDownload, FaTimes, FaTools, FaGraduationCap, FaProjectDiagram, FaEnvelope, 
 } from 'react-icons/fa';
 import { FiSun, FiMoon } from 'react-icons/fi';
@@ -197,13 +197,13 @@ const downloadAsImage = () => {
           >
             {darkMode ? <FiSun /> : <FiMoon />}
           </button>
-          <button
+          {/* <button
             onClick={downloadPDF}
             className="flex items-center gap-2 p-2 bg-white/20 hover:bg-white/30 rounded text-white text-xs sm:text-sm shadow"
             title="Download as PDF"
           >
             <FaDownload /> <span className="hidden sm:inline">PDF</span>
-          </button>
+          </button> */}
           <button
             onClick={downloadAsImage}
             className="flex items-center gap-2 p-2 bg-white/20 hover:bg-white/30 rounded text-white text-xs sm:text-sm shadow"
@@ -211,13 +211,13 @@ const downloadAsImage = () => {
           >
             <FaDownload /> <span className="hidden sm:inline">Image</span>
           </button>
-          <button
+          {/* <button
             onClick={printPortfolio}
             className="flex items-center gap-2 p-2 bg-white/20 hover:bg-white/30 rounded text-white text-xs sm:text-sm shadow"
             title="Print Portfolio"
           >
             <FaPrint /> <span className="hidden sm:inline">Print</span>
-          </button>
+          </button> */}
         </div>
       </header>
       {/* ...rest of your content... */}
@@ -242,6 +242,8 @@ const downloadAsImage = () => {
             {profile.socialLinks?.github && <a className='p-2 border rounded bg-gray-200 dark:bg-gray-700' href={profile.socialLinks.github} target="_blank" rel="noreferrer"><FaGithub /></a>}
             {profile.socialLinks?.linkedin && <a className='p-2 border rounded bg-gray-200 dark:bg-gray-700' href={profile.socialLinks.linkedin} target="_blank" rel="noreferrer"><FaLinkedin /></a>}
             {profile.socialLinks?.twitter && <a className='p-2 border rounded bg-gray-200 dark:bg-gray-700' href={profile.socialLinks.twitter} target="_blank" rel="noreferrer"><FaTwitter /></a>}
+            {profile.socialLinks?.instagram && <a className='p-2 border rounded bg-gray-200 dark:bg-gray-700' href={profile.socialLinks.instagram} target="_blank" rel="noreferrer"><FaInstagram /></a>}
+
           </div>
           <div className="flex gap-4 mt-4">
         <a href="#projects" className="bg-indigo-600 text-white px-6 py-2 rounded shadow hover:bg-indigo-700 transition">View Projects</a>

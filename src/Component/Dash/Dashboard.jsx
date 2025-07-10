@@ -160,26 +160,25 @@ function Dashboard() {
   }
 
   return (
-    <div className="p-6 max-w-7xl mx-auto space-y-10">
+    <div className="p-6 max-w-7xl mx-auto space-y-10 text-gray-800 dark:text-gray-100">
       {/* Welcome Section */}
 <section>
-  <h1 className="text-3xl font-bold text-gray-800">
+  <h1 className="text-3xl font-bold text-gray-800 dark:text-white">
     Welcome back,{' '}
     <span className="text-indigo-600">
       {profile?.fullName || user.displayName || 'User'}
     </span>
     !
   </h1>
-  <p className="mt-2 text-base text-gray-600 max-w-xl">
+  <p className="mt-2 text-base text-gray-600 dark:text-gray-400 max-w-xl">
     Manage your projects, update your profile, and track your portfolio here.
   </p>
 </section>
 
 {/* Announcement Section */}
-<section className="bg-white rounded-lg p-6 shadow-md w-full max-w-6xl mx-auto text-base">
-  <div className="flex items-center mb-5 space-x-3">
+<section className="bg-white dark:bg-gray-800 rounded-lg p-6 shadow-md dark:shadow-none w-full max-w-6xl mx-auto text-base">  <div className="flex items-center mb-5 space-x-3">
     <FaBullhorn className="text-indigo-600 w-6 h-6" />
-    <h2 className="text-xl font-semibold text-indigo-700">Announcement</h2>
+    <h2 className="text-center text-red-500 dark:text-red-400 font-semibold">Announcement</h2>
   </div>
 
   {isAdmin && (
@@ -194,8 +193,7 @@ function Dashboard() {
       />
       <button
         type="submit"
-        className="mt-3 px-5 py-2 bg-indigo-600 text-white rounded hover:bg-indigo-700 text-sm"
-      >
+        className="mt-3 px-5 py-2 bg-indigo-600 text-white rounded hover:bg-indigo-700 dark:hover:bg-indigo-500 text-sm"      >
         Post Announcement
       </button>
     </form>
@@ -207,7 +205,7 @@ function Dashboard() {
     posts.map((post) => (
       <div
         key={post.id}
-        className="bg-indigo-50 p-5 rounded-md border border-indigo-200 text-gray-800 mb-4 text-sm"
+        className="bg-indigo-50 dark:bg-gray-700 p-5 rounded-md border border-indigo-200 dark:border-indigo-500 text-gray-800 dark:text-gray-200 mb-4 text-sm"
       >
         <p className="whitespace-pre-wrap">{post.content}</p>
         <small className="block mt-2 text-indigo-600 italic">
@@ -220,7 +218,7 @@ function Dashboard() {
     ))
   )}
 
-  <div className="mt-6 flex items-center space-x-2 text-sm text-indigo-600 bg-indigo-100 rounded-md p-3 border border-indigo-200">
+  <div className="mt-6 flex items-center space-x-2 text-sm text-indigo-600 dark:text-indigo-300 bg-indigo-100 dark:bg-gray-700 rounded-md p-3 border border-indigo-200 dark:border-indigo-500">
     <FaExclamationCircle className="w-5 h-5" />
     <p>Reminder: Announcements posted here are visible to all users immediately.</p>
   </div>
@@ -235,7 +233,7 @@ function Dashboard() {
 
 {/* Projects */}
 <section>
-  <h2 className="text-xl font-semibold text-gray-800 mb-4">Recent Projects</h2>
+  <h2 className="text-xl font-semibold text-gray-800 mb-4 dark:text-gray-500">Recent Projects</h2>
   {projects.length === 0 ? (
     <p className="text-gray-600 text-sm">No recent project.</p>
   ) : (
@@ -243,11 +241,11 @@ function Dashboard() {
       {projects.map((project) => (
         <div
           key={project.id}
-          className="bg-white rounded-lg p-4 shadow hover:shadow-lg transition cursor-pointer"
+          className="bg-white dark:bg-gray-800 rounded-lg max-w-lg w-full p-6 relative max-h-screen overflow-y-auto text-sm"
           onClick={() => setSelectedProject(project)}
         >
-          <h3 className="font-semibold text-indigo-600 text-base mb-1">{project.title}</h3>
-          <p className="text-gray-700">{project.description?.slice(0, 120) || 'No description'}</p>
+          <h3 className="font-semibold text-indigo-600 text-base mb-1 dark:text-indigo-700">{project.title}</h3>
+          <p className="text-gray-700 dark:text-gray-400">{project.description?.slice(0, 120) || 'No description'}</p>
           <div className="mt-4 text-sm text-indigo-500 font-medium">View Details →</div>
         </div>
       ))}
@@ -258,16 +256,16 @@ function Dashboard() {
 {/* Modal */}
 {selectedProject && (
   <div
-    className="fixed top-0 left-0 w-screen h-screen bg-black bg-opacity-50 flex items-center justify-center z-50"
+    // className="fixed top-0 left-0 w-screen h-screen bg-black bg-opacity-50 flex items-center justify-center z-50"
     onClick={() => setSelectedProject(null)}
   >
-    <div
-      className="bg-white rounded-lg max-w-lg w-full p-6 relative max-h-screen overflow-y-auto text-sm"
+    {/* <div
+      className="bg-white dark:bg-gray-700 rounded-lg max-w-lg w-full p-6 relative max-h-screen overflow-y-auto text-sm"
       onClick={(e) => e.stopPropagation()}
     >
       <button
         onClick={() => setSelectedProject(null)}
-        className="absolute top-4 right-4 text-gray-600 hover:text-gray-900 text-xl"
+        className="absolute top-4 right-4 text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white text-xl"
       >
         <FaTimes />
       </button>
@@ -279,7 +277,7 @@ function Dashboard() {
           className="rounded mb-4 max-h-60 w-full object-cover"
         />
       )}
-      <p className="text-gray-700 whitespace-pre-line">
+      <p className="text-gray-700 dark:text-gray-200 whitespace-pre-line">
         {selectedProject.description || 'No description provided.'}
       </p>
       {selectedProject.liveURL && (
@@ -287,12 +285,12 @@ function Dashboard() {
           href={selectedProject.liveURL}
           target="_blank"
           rel="noopener noreferrer"
-          className="inline-block mt-4 text-indigo-600 hover:underline"
+         className="inline-block mt-4 text-indigo-600 dark:text-indigo-400 hover:underline"
         >
           View Live →
         </a>
       )}
-    </div>
+    </div> */}
   </div>
 )}
     </div>
@@ -300,14 +298,15 @@ function Dashboard() {
 }
 
 const Stat = ({ icon, label, value }) => (
-  <div className="bg-white rounded-lg p-6 shadow flex items-center space-x-4">
+  <div className="bg-white dark:bg-gray-800 rounded-lg p-6 shadow-md dark:shadow-none flex items-center space-x-4">
     <div className="text-indigo-500 w-10 h-10">{icon}</div>
     <div>
-      <p className="text-gray-500">{label}</p>
-      <p className="text-2xl font-semibold text-gray-900">{value}</p>
+      <p className="text-gray-500 dark:text-gray-400">{label}</p>
+      <p className="text-2xl font-semibold text-gray-900 dark:text-white">{value}</p>
     </div>
-    <Chat/>
+    <Chat />
   </div>
 );
+
 
 export default Dashboard;

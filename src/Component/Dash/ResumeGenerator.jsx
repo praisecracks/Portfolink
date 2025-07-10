@@ -6,6 +6,7 @@ import {
 import Profile from '../../assets/profile.png';
 import html2pdf from 'html2pdf.js';
 import { toast } from 'react-toastify';
+import Chat from './Chat';
 
 function ResumeGenerator() {
   const [user, setUser] = useState(null);
@@ -297,6 +298,7 @@ function ResumeGenerator() {
     <p>genrated with <i>portfolink</i> </p>
   </div>
 </div>
+<Chat/>
     </div>
   );
 }

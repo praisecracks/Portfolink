@@ -102,28 +102,28 @@ function Sidebar({ sidebarOpen, setSidebarOpen }) {
 
   const isActive = (path) => location.pathname === path;
 
-  const linkBaseClasses = "flex items-center gap-2 py-2.5 px-4 rounded transition duration-200 select-none text-sm font-medium";
-  const linkInactiveClasses = "text-gray-700 hover:bg-indigo-100 dark:text-gray-300 dark:hover:bg-indigo-700";
-  const linkActiveClasses = "bg-indigo-100 text-indigo-900 font-semibold dark:bg-indigo-700 dark:text-white";
+  const linkBaseClasses = "flex items-center gap-2 py-2.5 px-4 rounded-md transition-colors duration-200 text-sm font-medium";
+  const linkInactiveClasses = "text-gray-600 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-800";
+  const linkActiveClasses = "bg-indigo-100 text-indigo-700 dark:bg-indigo-700 dark:text-white";
 
   return (
     <>
       {sidebarOpen && isMobile && (
         <div
-          className="fixed inset-0 bg-black bg-opacity-20 z-40"
+          className="fixed inset-0 bg-black bg-opacity-40 z-40"
           onClick={() => setSidebarOpen(false)}
         />
       )}
 
       <aside
-        className={`bg-white dark:bg-gray-900 shadow-md w-64 py-4 px-2 overflow-y-auto max-h-screen fixed inset-y-0 left-0 transform ${
+        className={`bg-white dark:bg-[#111827] border-r border-gray-200 dark:border-gray-800 shadow-md w-64 py-4 px-2 overflow-y-auto max-h-screen fixed inset-y-0 left-0 transform ${
           sidebarOpen ? "translate-x-0" : "-translate-x-full"
         } md:relative md:translate-x-0 transition-transform duration-200 ease-in-out z-50`}
       >
         {/* Header */}
-        <div className="flex justify-between items-center px-4 mb-4">
+        <div className="flex justify-between items-center px-4 mb-6">
           <img src={logo} alt="logo" className='w-6 h-6' />
-          <h2 className="text-xl font-bold text-indigo-600 text-center flex-1 dark:text-indigo-400">
+          <h2 className="text-xl font-bold text-indigo-600 dark:text-indigo-400">
             Portfolink
           </h2>
           {isMobile && (
@@ -135,14 +135,18 @@ function Sidebar({ sidebarOpen, setSidebarOpen }) {
 
         {/* User Profile */}
         {currentUser && (
-          <div className="flex flex-col items-center gap-1 px-4 py-3 text-center mb-3 border-b dark:border-gray-700">
+          <div className="flex flex-col items-center text-center px-4 py-4 mb-6 border-y border-gray-200 dark:border-gray-700">
             <img
               src={currentUser.photoURL || "/default-avatar.png"}
               alt="User Avatar"
-              className="w-16 h-16 rounded-full object-cover border"
+              className="w-16 h-16 rounded-full object-cover border border-indigo-200 dark:border-indigo-600"
             />
-            <h3 className="text-sm font-semibold dark:text-white text-gray-800">{currentUser.displayName || "User"}</h3>
-            <p className="text-xs text-gray-500 dark:text-gray-400 truncate">{currentUser.email}</p>
+            <h3 className="mt-2 text-sm font-semibold text-gray-800 dark:text-white">
+              {currentUser.displayName || "User"}
+            </h3>
+            <p className="text-xs text-gray-500 dark:text-gray-400 truncate w-full">
+              {currentUser.email}
+            </p>
           </div>
         )}
 
@@ -155,7 +159,6 @@ function Sidebar({ sidebarOpen, setSidebarOpen }) {
             <FaUser /> Profile
           </Link>
 
-          {/* Portfolio Dropdown */}
           <div>
             <button
               onClick={() => setPortfolioOpen(!portfolioOpen)}
@@ -170,18 +173,10 @@ function Sidebar({ sidebarOpen, setSidebarOpen }) {
 
             {portfolioOpen && (
               <div className="ml-6 mt-1 space-y-1">
-                <Link
-                  to="/dashboard/portfolio"
-                  onClick={handleLinkClick}
-                  className={`${linkBaseClasses} ${isActive("/dashboard/portfolio") ? linkActiveClasses : linkInactiveClasses}`}
-                >
+                <Link to="/dashboard/portfolio" onClick={handleLinkClick} className={`${linkBaseClasses} ${isActive("/dashboard/portfolio") ? linkActiveClasses : linkInactiveClasses}`}>
                   View/Edit
                 </Link>
-                <Link
-                  to="/dashboard/portfolio/resume"
-                  onClick={handleLinkClick}
-                  className={`${linkBaseClasses} ${isActive("/dashboard/portfolio/resume") ? linkActiveClasses : linkInactiveClasses}`}
-                >
+                <Link to="/dashboard/portfolio/resume" onClick={handleLinkClick} className={`${linkBaseClasses} ${isActive("/dashboard/portfolio/resume") ? linkActiveClasses : linkInactiveClasses}`}>
                   Generate Resume
                 </Link>
               </div>
@@ -215,13 +210,14 @@ function Sidebar({ sidebarOpen, setSidebarOpen }) {
             <FaInfoCircle /> About Web
           </Link>
 
-          <button onClick={handleLogout} className="flex items-center w-full text-left text-red-600 dark:text-red-400 hover:bg-red-100 dark:hover:bg-red-700 py-2.5 px-4 rounded">
+          <button onClick={handleLogout} className="flex items-center w-full text-left text-red-600 dark:text-red-400 hover:bg-red-100 dark:hover:bg-red-700 py-2.5 px-4 rounded-md">
             <FaSignOutAlt className="mr-2" /> Logout
           </button>
         </nav>
 
+        {/* Dark Mode Toggle */}
         <div className="px-6 py-5 border-t border-gray-200 dark:border-gray-700 flex justify-center">
-          <button onClick={toggleDarkMode} className="text-gray-700 dark:text-gray-300 flex items-center gap-2 text-sm">
+          <button onClick={toggleDarkMode} className="text-gray-700 dark:text-gray-300 hover:text-indigo-600 dark:hover:text-indigo-400 flex items-center gap-2 text-sm">
             {isDarkMode ? <><FaSun /> Light Mode</> : <><FaMoon /> Dark Mode</>}
           </button>
         </div>

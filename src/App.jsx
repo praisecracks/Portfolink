@@ -1,10 +1,10 @@
+import { useEffect, useState } from "react";
 import { Routes, Route, useLocation } from "react-router-dom";
 import Home from './Component/Lander/Home';
 import Register from "./Component/RegisterPage/Register";
 import Login from './Component/RegisterPage/Login..jsx';
 import Dashboard from './Component/Dash/Dashboard';
 import Projects from './Component/Dash/Projects';
-// import Settings from './Component/Dash/Settings';
 import DashboardLayout from './Component/Dash/DashboardLayout';
 import { ToastContainer } from 'react-toastify';
 import { AnimatePresence } from 'framer-motion';
@@ -22,37 +22,39 @@ import ResumeGenerator from "./Component/Dash/ResumeGenerator.jsx";
 function App() {
   const location = useLocation();
 
+  const [darkMode, setDarkMode] = useState(() => {
+    return localStorage.getItem('darkMode') === 'true';
+  });
+
+  useEffect(() => {
+    document.body.classList.toggle('dark', darkMode);
+  }, [darkMode]);
+
   return (
-    <>
+    <div className={`min-h-screen transition-all duration-300 ${darkMode ? 'bg-gray-900 text-indigo-400' : 'bg-white text-indigo-700'}`}>
       <AnimatePresence mode="wait">
-        
-   <Routes location={location} key={location.pathname}>
-  <Route path='/' element={<Home />} />
-  <Route path='/register' element={<Register />} />
-  <Route path='/login' element={<Login />} />
-  <Route path='/portfolio/:uid' element={<PortfolioView />} />
+        <Routes location={location} key={location.pathname}>
+          <Route path='/' element={<Home />} />
+          <Route path='/register' element={<Register />} />
+          <Route path='/login' element={<Login />} />
+          <Route path='/portfolio/:uid' element={<PortfolioView />} />
 
-  <Route path='/dashboard' element={<DashboardLayout />}>
-    <Route index element={<Dashboard />} />
-    <Route path='profile' element={<Profile />} />
-    <Route path='projects' element={<Projects />} />
-    <Route path='portfolio' element={<Portfolio />} />
-    <Route path='portfolio/resume' element={<ResumeGenerator />} />
-    <Route path='about' element={<About />} />
-    <Route path='post' element={<Post />} />
-    <Route path='messages' element={<Messages />} />
-    <Route path='chat' element={<Chat />} />
-  </Route>
-</Routes>
-
-
-
-
-
+          <Route path='/dashboard' element={<DashboardLayout />}>
+            <Route index element={<Dashboard />} />
+            <Route path='profile' element={<Profile />} />
+            <Route path='projects' element={<Projects />} />
+            <Route path='portfolio' element={<Portfolio />} />
+            <Route path='portfolio/resume' element={<ResumeGenerator />} />
+            <Route path='about' element={<About />} />
+            <Route path='post' element={<Post />} />
+            <Route path='messages' element={<Messages />} />
+            <Route path='chat' element={<Chat />} />
+          </Route>
+        </Routes>
       </AnimatePresence>
 
       <ToastContainer position="top-right" />
-    </>
+    </div>
   );
 }
 

@@ -18,7 +18,7 @@ function DashboardLayout() {
   }, []);
 
   return (
-    <div className="h-screen flex overflow-hidden bg-gray-100 font-inter">
+      <div className="h-screen flex overflow-hidden bg-gray-100 dark:bg-gray-900 text-gray-900 dark:text-white font-inter transition-colors duration-300">
       {/* Sidebar */}
       <Sidebar sidebarOpen={sidebarOpen} setSidebarOpen={setSidebarOpen} />
 

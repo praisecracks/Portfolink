@@ -4,4 +4,9 @@
 
 body {
   font-family: 'Inter', sans-serif;
+  @apply bg-white text-gray-900 transition-colors duration-300;
+}
+
+html.dark body {
+  @apply bg-gray-900 text-white transition-colors duration-300;
 }
