@@ -207,8 +207,7 @@ const downloadAsImage = () => {
           <button
             onClick={downloadAsImage}
             className="flex items-center gap-2 p-2 bg-white/20 hover:bg-white/30 rounded text-white text-xs sm:text-sm shadow"
-            title="Download as Image"
-          >
+            title="Download as Image">
             <FaDownload /> <span className="hidden sm:inline">Image</span>
           </button>
           {/* <button
