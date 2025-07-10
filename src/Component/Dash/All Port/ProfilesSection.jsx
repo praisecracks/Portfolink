@@ -6,7 +6,7 @@ import {
   FaInstagram,
   FaCopy,
 } from "react-icons/fa";
-import defaultAvatar from "../../../assets/Profile.png";
+import defaultAvatar from "../../../assets/profile.png";
 import EditProfileForm from "./EditProfileForm";
 
 function ProfileSection({
