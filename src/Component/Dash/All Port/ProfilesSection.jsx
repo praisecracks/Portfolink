@@ -5,8 +5,8 @@ import {
   FaTwitter,
   FaInstagram,
   FaCopy,
+  FaUserCircle,
 } from "react-icons/fa";
-import defaultAvatar from "../../../assets/Profile.png";
 import EditProfileForm from "./EditProfileForm";
 
 function ProfileSection({
@@ -40,18 +40,10 @@ function ProfileSection({
 
   return (
     <section className="max-w-5xl mx-auto px-6 py-10 bg-white dark:bg-gray-900 rounded-lg shadow-lg">
-      {/* Avatar + Name + Title */}
+      {/* Icon Avatar + Name + Title */}
       <div className="flex flex-col items-center space-y-4">
-        <div className="relative w-32 h-32 rounded-full border-4 border-indigo-500 shadow-md overflow-hidden">
-          <img
-            src={profileData.photoURL?.trim() || defaultAvatar}
-            alt="Profile"
-            className="w-full h-full object-cover"
-            onError={(e) => {
-              e.target.onerror = null;
-              e.target.src = defaultAvatar;
-            }}
-          />
+        <div className="text-indigo-600 dark:text-indigo-400">
+          <FaUserCircle className="w-28 h-28 md:w-32 md:h-32" />
         </div>
         <h1 className="text-3xl font-bold text-gray-900 dark:text-white">
           {profileData.fullName}
@@ -202,7 +194,7 @@ function ProfileSection({
           onClick={onEditClick}
           className="bg-indigo-600 hover:bg-indigo-700 text-white font-semibold px-6 py-2 rounded-md shadow transition duration-200"
         >
-         Edit Portfolio
+          Edit Portfolio
         </button>
       </div>
     </section>
