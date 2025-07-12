@@ -24,8 +24,14 @@ app.get('/', (req, res) => {
   res.send('✅ Cloudinary Upload + AI API Working');
 });
 
-// ✅ Upload Image to Cloudinary
+// ✅ Upload Image to Cloudinary (with safety check)
 app.post('/upload', upload.single('image'), (req, res) => {
+  // Check if file is missing
+  if (!req.file) {
+    return res.status(400).json({ error: 'No image file received' });
+  }
+
+  // Proceed with upload
   const stream = cloudinary.uploader.upload_stream(
     { resource_type: 'auto' },
     (error, result) => {
@@ -36,6 +42,7 @@ app.post('/upload', upload.single('image'), (req, res) => {
       return res.json({ imageUrl: result.secure_url });
     }
   );
+
   stream.end(req.file.buffer);
 });
 
