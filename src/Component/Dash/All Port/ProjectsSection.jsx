@@ -97,16 +97,18 @@ function ProjectsSection({ userId }) {
               <p className="text-gray-600 dark:text-gray-300 text-sm mt-1 line-clamp-2">
                 {project.description}
               </p>
-              <div className="mt-2 flex flex-wrap gap-1">
-                {project.tags?.map((tag, i) => (
-                  <span
-                    key={i}
-                    className="bg-indigo-100 dark:bg-indigo-800 text-indigo-800 dark:text-white text-xs font-medium px-2 py-1 rounded-full"
-                  >
-                    {tag}
-                  </span>
-                ))}
-              </div>
+           <div className="mt-2 flex flex-wrap gap-1">
+        {Array.isArray(project.tags) &&
+          project.tags.map((tag, i) => (
+            <span
+              key={i}
+              className="bg-indigo-100 dark:bg-indigo-800 text-indigo-800 dark:text-white text-xs font-medium px-2 py-1 rounded-full"
+            >
+              {tag}
+            </span>
+          ))}
+      </div>
+
             </div>
           ))}
         </div>
