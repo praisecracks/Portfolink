@@ -8,7 +8,7 @@ import {
 import { signOut } from 'firebase/auth';
 import { auth, db } from '../../firebase';
 import { toast } from 'react-toastify';
-import { collection, onSnapshot, query } from 'firebase/firestore';
+import { collection, getDoc, doc, onSnapshot, query } from 'firebase/firestore';
 
 function Sidebar({ sidebarOpen, setSidebarOpen }) {
   const navigate = useNavigate();
@@ -22,9 +22,31 @@ function Sidebar({ sidebarOpen, setSidebarOpen }) {
   const [portfolioOpen, setPortfolioOpen] = useState(false);
   const lastMessageRef = useRef(null);
 
+  const [profile, setProfile] = useState({
+    photoURL: "",
+    fullName: "",
+  });
+
+  // Fetch profile photoURL and name from Firestore
   useEffect(() => {
-    if (Notification.permission !== "granted") Notification.requestPermission();
-  }, []);
+    const fetchUserProfile = async () => {
+      if (!currentUser) return;
+      try {
+        const userRef = doc(db, "users", currentUser.uid);
+        const docSnap = await getDoc(userRef);
+        if (docSnap.exists()) {
+          const data = docSnap.data();
+          setProfile({
+            photoURL: data.photoURL || currentUser.photoURL || "",
+            fullName: data.fullName || currentUser.displayName || "User",
+          });
+        }
+      } catch (err) {
+        console.error("Failed to fetch profile:", err);
+      }
+    };
+    fetchUserProfile();
+  }, [currentUser]);
 
   useEffect(() => {
     if (!currentUser) return;
@@ -137,12 +159,16 @@ function Sidebar({ sidebarOpen, setSidebarOpen }) {
         {currentUser && (
           <div className="flex flex-col items-center text-center px-4 py-4 mb-6 border-y border-gray-200 dark:border-gray-700">
             <img
-              src={currentUser.photoURL || "/default-avatar.png"}
+              src={
+                profile.photoURL?.trim()
+                  ? profile.photoURL
+                  : "https://cdn-icons-png.flaticon.com/512/149/149071.png"
+              }
               alt="User Avatar"
               className="w-16 h-16 rounded-full object-cover border border-indigo-200 dark:border-indigo-600"
             />
             <h3 className="mt-2 text-sm font-semibold text-gray-800 dark:text-white">
-              {currentUser.displayName || "User"}
+              {profile.fullName}
             </h3>
             <p className="text-xs text-gray-500 dark:text-gray-400 truncate w-full">
               {currentUser.email}

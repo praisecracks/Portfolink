@@ -416,7 +416,7 @@ function Projects() {
   >
     <div
       onClick={(e) => e.stopPropagation()}
-      className="bg-white dark:bg-gray-900 rounded-xl shadow-lg max-w-xl w-full p-6 relative text-gray-900 dark:text-gray-100"
+      className="bg-white dark:bg-gray-900 rounded-xl shadow-lg max-w-xl w-full p-6 relative text-gray-900 dark:text-gray-100 overflow-y-auto max-h-[90vh]"
     >
       <button
         onClick={() => setFormVisible(false)}
