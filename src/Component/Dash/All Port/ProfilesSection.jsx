@@ -134,7 +134,7 @@ function ProfileSection({
           Skills
         </h3>
         <div className="flex flex-wrap gap-3">
-          {profileData.skills?.length === 0 ? (
+          {!Array.isArray(profileData.skills) || profileData.skills.length === 0 ? (
             <p className="text-gray-500 dark:text-gray-400">
               No skills added yet
             </p>
@@ -157,7 +157,7 @@ function ProfileSection({
           Education
         </h3>
         <div className="grid md:grid-cols-2 gap-4">
-          {profileData.education?.length === 0 ? (
+          {!Array.isArray(profileData.education) || profileData.education.length === 0 ? (
             <p className="text-gray-500 dark:text-gray-400">
               No education history added
             </p>
