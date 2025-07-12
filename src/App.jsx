@@ -1,14 +1,15 @@
-import { useEffect, useState } from "react";
-import { Routes, Route, useLocation } from "react-router-dom";
+import { useLocation } from "react-router-dom";
+import { Routes, Route } from "react-router-dom";
+import { AnimatePresence } from "framer-motion";
+import { ToastContainer } from "react-toastify";
+import { useDarkMode } from "./Context/DarkModeContext"; // ✅ use your context
+
 import Home from './Component/Lander/Home';
 import Register from "./Component/RegisterPage/Register";
 import Login from './Component/RegisterPage/Login..jsx';
 import Dashboard from './Component/Dash/Dashboard';
 import Projects from './Component/Dash/Projects';
 import DashboardLayout from './Component/Dash/DashboardLayout';
-import { ToastContainer } from 'react-toastify';
-import { AnimatePresence } from 'framer-motion';
-import 'react-toastify/dist/ReactToastify.css';
 import Sidebar from "./Component/Dash/Sidebar.jsx";
 import Profile from "./Component/Dash/Profile.jsx";
 import Portfolio from "./Component/Dash/Portfolio.jsx";
@@ -19,16 +20,11 @@ import Messages from "./Component/Dash/Message.jsx";
 import Chat from "./Component/Dash/Chat.jsx";
 import ResumeGenerator from "./Component/Dash/ResumeGenerator.jsx";
 
+import 'react-toastify/dist/ReactToastify.css';
+
 function App() {
   const location = useLocation();
-
-  const [darkMode, setDarkMode] = useState(() => {
-    return localStorage.getItem('darkMode') === 'true';
-  });
-
-  useEffect(() => {
-    document.body.classList.toggle('dark', darkMode);
-  }, [darkMode]);
+  const { darkMode } = useDarkMode(); // ✅ context handles it
 
   return (
     <div className={`min-h-screen transition-all duration-300 ${darkMode ? 'bg-gray-900 text-indigo-400' : 'bg-white text-indigo-700'}`}>
