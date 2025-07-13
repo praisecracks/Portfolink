@@ -2,15 +2,22 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-<link rel="icon" type="image/png" href="./src/assets/portLogo.png" />
+    <link rel="icon" type="image/png" href="./src/assets/portLogo.png" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Portfolink</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
 
+    <script>
+      const dark = localStorage.getItem('darkMode') === 'true';
+      if (dark) {
+        document.documentElement.classList.add('dark');
+      } else {
+        document.documentElement.classList.remove('dark');
+      }
+    </script>
   </head>
-      <body>
-        <div id="root"></div>
-        <script type="module" src="/src/main.jsx"></script>
-      </body>
-
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/main.jsx"></script>
+  </body>
 </html>

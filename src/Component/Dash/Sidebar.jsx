@@ -86,13 +86,18 @@ function Sidebar({ sidebarOpen, setSidebarOpen }) {
     setIsAdmin(currentUser.uid === adminUID);
   }, [currentUser]);
 
-  useEffect(() => {
-    const savedTheme = localStorage.getItem('theme');
-    const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
-    const dark = savedTheme === 'dark' || (!savedTheme && prefersDark);
-    setIsDarkMode(dark);
-    document.documentElement.classList.toggle('dark', dark);
-  }, []);
+useEffect(() => {
+  const savedTheme = localStorage.getItem('theme');
+
+  if (savedTheme === 'dark') {
+    setIsDarkMode(true);
+    document.documentElement.classList.add('dark');
+  } else {
+    setIsDarkMode(false);
+    document.documentElement.classList.remove('dark');
+  }
+}, []);
+
 
   const toggleDarkMode = () => {
     const next = !isDarkMode;

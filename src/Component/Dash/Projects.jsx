@@ -11,6 +11,7 @@ import {
   FaHistory,
 } from "react-icons/fa";
 import { FaSpinner } from "react-icons/fa";
+import RocketLoader  from './All Port/RocketLoader'; 
 import { db } from "../../firebase";
 import {
   collection,
@@ -64,18 +65,27 @@ function Projects() {
     return unsubscribe;
   }, []);
 
-  useEffect(() => {
-    if (!user?.uid) return;
-    const q = query(collection(db, "projects"), where("userId", "==", user.uid));
-    const unsub = onSnapshot(q, (snapshot) => {
-      const items = snapshot.docs.map((doc) => ({
-        id: doc.id,
-        ...doc.data(),
-      }));
-      setProjects(items);
-    });
-    return () => unsub();
-  }, [user?.uid]);
+useEffect(() => {
+  if (!user?.uid) return;
+
+  setLoading(true); // start loading
+
+  const q = query(collection(db, "projects"), where("userId", "==", user.uid));
+  const unsub = onSnapshot(q, (snapshot) => {
+    const items = snapshot.docs.map((doc) => ({
+      id: doc.id,
+      ...doc.data(),
+    }));
+
+    setProjects(items);
+
+    // ensure loading state is visible for at least a short time
+    setTimeout(() => setLoading(false), 500);
+  });
+
+  return () => unsub();
+}, [user?.uid]);
+
 
   useEffect(() => {
     if (!user?.uid || !showPushHistory) return;
@@ -224,7 +234,16 @@ function Projects() {
     });
 
   const categories = ["all", ...new Set(projects.map((p) => p.category).filter(Boolean))];
-  
+
+
+if (loading) return (
+  <div className="flex flex-col items-center justify-center min-h-[50vh]">
+    <RocketLoader />
+    {/* <p className="mt-4 text-gray-600 dark:text-gray-300">Your project is loading</p> */}
+  </div>
+);
+console.log(loading)
+
   return (
     <div className="max-w-6xl mx-auto px-4 py-10 dark:bg-gray-900">
       <div className="flex justify-between items-center flex-wrap gap-4 mb-6 dark:bg-gray-900 dark:text-gray-300">
@@ -614,13 +633,15 @@ function Projects() {
         />
       )}
 
-      <ReactMarkdown
-        remarkPlugins={[remarkGfm]}
-        rehypePlugins={[rehypeHighlight]}
-        className="prose dark:prose-invert max-w-none"
-      >
-        {selectedProject.description || "No description"}
-      </ReactMarkdown>
+      <div className="prose dark:prose-invert max-w-none">
+        <ReactMarkdown
+          remarkPlugins={[remarkGfm]}
+          rehypePlugins={[rehypeHighlight]}
+        >
+          {selectedProject.description || "No description"}
+        </ReactMarkdown>
+      </div>
+
 
       <p className="text-sm text-gray-600 dark:text-gray-400 mt-4">
         Category: {selectedProject.category || "N/A"}

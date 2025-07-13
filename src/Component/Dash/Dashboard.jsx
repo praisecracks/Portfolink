@@ -259,38 +259,7 @@ function Dashboard() {
     // className="fixed top-0 left-0 w-screen h-screen bg-black bg-opacity-50 flex items-center justify-center z-50"
     onClick={() => setSelectedProject(null)}
   >
-    {/* <div
-      className="bg-white dark:bg-gray-700 rounded-lg max-w-lg w-full p-6 relative max-h-screen overflow-y-auto text-sm"
-      onClick={(e) => e.stopPropagation()}
-    >
-      <button
-        onClick={() => setSelectedProject(null)}
-        className="absolute top-4 right-4 text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white text-xl"
-      >
-        <FaTimes />
-      </button>
-      <h3 className="text-xl font-bold text-indigo-600 mb-4">{selectedProject.title}</h3>
-      {selectedProject.imageURL && (
-        <img
-          src={selectedProject.imageURL}
-          alt={selectedProject.title}
-          className="rounded mb-4 max-h-60 w-full object-cover"
-        />
-      )}
-      <p className="text-gray-700 dark:text-gray-200 whitespace-pre-line">
-        {selectedProject.description || 'No description provided.'}
-      </p>
-      {selectedProject.liveURL && (
-        <a
-          href={selectedProject.liveURL}
-          target="_blank"
-          rel="noopener noreferrer"
-         className="inline-block mt-4 text-indigo-600 dark:text-indigo-400 hover:underline"
-        >
-          View Live →
-        </a>
-      )}
-    </div> */}
+  
   </div>
 )}
     </div>
