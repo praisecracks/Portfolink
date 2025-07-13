@@ -191,14 +191,14 @@ function EditProfileForm({ profileData, onSave, onCancel }) {
             type="submit"
             className="bg-indigo-600 hover:bg-indigo-700 text-white px-5 py-2 rounded font-medium"
           >
-            💾 Save
+           Save
           </button>
           <button
             type="button"
             onClick={onCancel}
-            className="bg-gray-300 dark:bg-gray-600 text-gray-800 dark:text-white px-5 py-2 rounded font-medium hover:bg-gray-400 dark:hover:bg-gray-700"
+            className="bg-red-300 dark:bg-red-400 text-white dark:text-white px-5 py-2 rounded font-medium hover:bg-red-500 dark:hover:bg-red-500"
           >
-            ❌ Cancel
+            Cancel
           </button>
         </div>
       </form>
