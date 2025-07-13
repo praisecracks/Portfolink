@@ -142,11 +142,14 @@ useEffect(() => {
         />
       )}
 
-      <aside
-        className={`bg-white dark:bg-[#111827] border-r border-gray-200 dark:border-gray-800 shadow-md w-64 py-4 px-2 overflow-y-auto max-h-screen fixed inset-y-0 left-0 transform ${
-          sidebarOpen ? "translate-x-0" : "-translate-x-full"
-        } md:relative md:translate-x-0 transition-transform duration-200 ease-in-out z-50`}
-      >
+    <aside
+      className={`sidebar-hide-scroll bg-white dark:bg-[#111827] border-r border-gray-200 dark:border-gray-800 shadow-md w-64 py-4 px-2 max-h-screen fixed inset-y-0 left-0 transform 
+      ${sidebarOpen ? "translate-x-0" : "-translate-x-full"} 
+      md:relative md:translate-x-0 
+      transition-transform duration-200 ease-in-out z-50 
+      overflow-y-scroll`}
+    >
+
         {/* Header */}
         <div className="flex justify-between items-center px-4 mb-6">
           <img src={logo} alt="logo" className='w-6 h-6' />
@@ -248,9 +251,14 @@ useEffect(() => {
 
         {/* Dark Mode Toggle */}
         <div className="px-6 py-5 border-t border-gray-200 dark:border-gray-700 flex justify-center">
-          <button onClick={toggleDarkMode} className="text-gray-700 dark:text-gray-300 hover:text-indigo-600 dark:hover:text-indigo-400 flex items-center gap-2 text-sm">
-            {isDarkMode ? <><FaSun /> Light Mode</> : <><FaMoon /> Dark Mode</>}
-          </button>
+<button
+  onClick={toggleDarkMode}
+  title={isDarkMode ? "Switch to Light Mode" : "Switch to Dark Mode"}
+  className="text-gray-700 dark:text-gray-300 hover:text-indigo-600 dark:hover:text-indigo-400 flex items-center gap-2 text-sm"
+>
+  {isDarkMode ? <><FaSun /> Light Mode</> : <><FaMoon /> Dark Mode</>}
+</button>
+
         </div>
       </aside>
     </>

@@ -10,3 +10,12 @@ body {
 html.dark body {
   @apply bg-gray-900 text-white transition-colors duration-300;
 }
+
+.sidebar-hide-scroll::-webkit-scrollbar {
+  display: none;
+}
+
+.sidebar-hide-scroll {
+  -ms-overflow-style: none; 
+  scrollbar-width: none;     
+}

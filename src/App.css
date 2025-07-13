@@ -6,6 +6,17 @@
   /* background: red; */
 }
 
+/* Hide scrollbar but keep scroll functionality */
+.sidebar-hide-scroll::-webkit-scrollbar {
+  display: none;
+}
+
+.sidebar-hide-scroll {
+  -ms-overflow-style: none;  /* IE and Edge */
+  scrollbar-width: none;     /* Firefox */
+}
+
+
 .logo {
   height: 6em;
   padding: 1.5em;

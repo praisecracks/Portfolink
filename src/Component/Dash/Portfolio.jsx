@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState } from 'react'; 
 import ProfileSection from './All Port/ProfilesSection';
 import ProjectsSection from './All Port/ProjectsSection';
 import ContactForm from './All Port/ContactForm';
@@ -14,7 +14,7 @@ function Portfolio() {
   const [isLoadingProfile, setIsLoadingProfile] = useState(true);
   const [copySuccess, setCopySuccess] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
-  const [activeTab, setActiveTab] = useState('profile'); // profile | projects | contact
+  const [activeTab, setActiveTab] = useState('profile');
 
   const auth = getAuth();
 
@@ -53,46 +53,41 @@ function Portfolio() {
   const handleCancel = () => setIsEditing(false);
 
   if (isLoadingProfile) return <BoopLoader />;
-  if (!user) return <div className="text-center mt-10 text-lg text-gray-700 dark:text-gray-300">Please login</div>;
+  if (!user) return (
+    <div className="text-center mt-10 text-lg text-gray-700 dark:text-gray-300">
+      Please login
+    </div>
+  );
 
   const publicLink = `${window.location.origin}/view/${user.uid}`;
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-white">
-      <div className="max-w-5xl mx-auto px-4 py-12">
+      <div className="max-w-5xl mx-auto px-4 py-1">
+
+        {/* Dynamic Heading */}
+        <h2 className="text-3xl font-bold text-center mb-6 text-indigo-700 dark:text-indigo-300 tracking-wide">
+          {activeTab === 'profile' && 'Your Profile'}
+          {activeTab === 'projects' && 'Your Projects'}
+          {activeTab === 'contact' && 'Contact Info'}
+          <span className="block w-12 h-1 bg-indigo-500 mx-auto mt-2 rounded transition-all duration-300" />
+        </h2>
 
         {/* Tab Navigation */}
         <div className="flex justify-center mb-8 gap-4">
-          <button
-            onClick={() => setActiveTab('profile')}
-            className={`px-4 py-2 rounded-full font-semibold transition ${
-              activeTab === 'profile'
-                ? 'bg-indigo-600 text-white'
-                : 'bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-200'
-            }`}
-          >
-            Profile
-          </button>
-          <button
-            onClick={() => setActiveTab('projects')}
-            className={`px-4 py-2 rounded-full font-semibold transition ${
-              activeTab === 'projects'
-                ? 'bg-indigo-600 text-white'
-                : 'bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-200'
-            }`}
-          >
-            Projects
-          </button>
-          <button
-            onClick={() => setActiveTab('contact')}
-            className={`px-4 py-2 rounded-full font-semibold transition ${
-              activeTab === 'contact'
-                ? 'bg-indigo-600 text-white'
-                : 'bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-200'
-            }`}
-          >
-            Contact
-          </button>
+          {['profile', 'projects', 'contact'].map((tab) => (
+            <button
+              key={tab}
+              onClick={() => setActiveTab(tab)}
+              className={`px-4 py-2 rounded-full font-semibold transition-all duration-300 ${
+                activeTab === tab
+                  ? 'bg-indigo-600 text-white shadow-md scale-105'
+                  : 'bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-200 hover:scale-105'
+              }`}
+            >
+              {tab.charAt(0).toUpperCase() + tab.slice(1)}
+            </button>
+          ))}
         </div>
 
         {/* Active Section */}
@@ -109,12 +104,12 @@ function Portfolio() {
               onCancel={handleCancel}
             />
           )}
-
           {activeTab === 'projects' && <ProjectsSection userId={user.uid} />}
           {activeTab === 'contact' && <ContactForm userId={user.uid} />}
         </div>
       </div>
-      <Chat/>
+
+      <Chat />
     </div>
   );
 }

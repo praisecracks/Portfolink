@@ -1,4 +1,16 @@
 import React, { useEffect, useState } from 'react';
+import {
+  LineChart,
+  Line,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  ResponsiveContainer,
+} from 'recharts';
+
+
+
 import { getAuth } from 'firebase/auth';
 import {
   collection,
@@ -86,9 +98,18 @@ function Dashboard() {
           where('userId', '==', user.uid),
           limit(3)
         );
-        const snapshot = await getDocs(q);
-        const projectsData = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-        setProjects(projectsData);
+
+
+const snapshot = await getDocs(q);
+const projectsData = snapshot.docs.map(doc => ({
+  id: doc.id,
+  ...doc.data(),
+  createdAt: doc.data().createdAt?.toDate() || new Date(),
+}));
+setProjects(projectsData);
+
+
+
       } catch (err) {
         console.error('Error fetching projects:', err);
         setError('Failed to load projects.');
@@ -128,6 +149,24 @@ function Dashboard() {
       alert('Failed to add post.');
     }
   };
+
+
+const generateChartData = () => {
+  const days = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+  const counts = { Sun: 0, Mon: 0, Tue: 0, Wed: 0, Thu: 0, Fri: 0, Sat: 0 };
+
+  projects.forEach((project) => {
+    const day = days[project.createdAt.getDay()];
+    counts[day]++;
+  });
+
+  return days.map((day) => ({ name: day, Projects: counts[day] }));
+};
+
+const chartData = generateChartData();
+
+
+
 
   if (!user) {
     return (
@@ -231,11 +270,58 @@ function Dashboard() {
   <Stat icon={<FaTasks />} label="Recent Activity" value={projects.length} />
 </section>
 
+
+
+
+
+<section className="mt-10 bg-white dark:bg-gray-800 rounded-lg p-6 shadow-sm text-sm">
+  <h3 className="text-lg font-semibold mb-4 text-gray-700 dark:text-gray-200">Activity Overview</h3>
+  <ResponsiveContainer width="100%" height={300}>
+    <LineChart data={chartData}>
+      <CartesianGrid strokeDasharray="3 3" />
+      <XAxis dataKey="name" stroke="#8884d8" />
+      <YAxis allowDecimals={false} />
+      <Tooltip />
+      <Line type="monotone" dataKey="Projects" stroke="#6366F1" strokeWidth={2} dot={{ r: 4 }} />
+    </LineChart>
+  </ResponsiveContainer>
+</section>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 {/* Projects */}
 <section>
   <h2 className="text-xl font-semibold text-gray-800 mb-4 dark:text-gray-500">Recent Projects</h2>
   {projects.length === 0 ? (
-    <p className="text-gray-600 text-sm">No recent project.</p>
+
+
+<div className="bg-indigo-50 dark:bg-gray-700 p-6 rounded-lg text-center">
+  <h3 className="text-lg font-semibold text-indigo-700 dark:text-white">No projects yet</h3>
+  <p className="text-gray-600 dark:text-gray-300 mt-2 text-sm">
+    You haven't added any projects to your portfolio.
+  </p>
+  <a
+    href="/dashboard/portfolio"
+    className="mt-4 inline-block bg-indigo-600 text-white px-5 py-2 rounded hover:bg-indigo-700 text-sm"
+  >
+    Add your first project
+  </a>
+</div>
+
+
   ) : (
     <div className="grid grid-cols-1 md:grid-cols-2 gap-6 text-sm">
       {projects.map((project) => (
