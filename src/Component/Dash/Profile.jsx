@@ -2,6 +2,7 @@ import React, { useEffect, useState, useRef } from "react";
 import { FiCamera } from "react-icons/fi";
 import { getAuth, onAuthStateChanged } from "firebase/auth";
 import { uploadImageToBackend } from "../uploadImageToBackend";
+import { increment, updateDoc } from "firebase/firestore"; 
 import {
   doc,
   getDoc,
@@ -20,16 +21,19 @@ function Profile() {
   const [projectCount, setProjectCount] = useState(0);
   const [loading, setLoading] = useState(true);
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [editForm, setEditForm] = useState({
-    fullName: "",
-    country: "",
-    quote: "",
-    skills: "",
-    photoURL: "",
-  });
+const [editForm, setEditForm] = useState({
+  fullName: "",
+  country: "",
+  quote: "",
+  skills: "",
+  photoURL: "",
+  isPublic: true, 
+});
+
   const [uploading, setUploading] = useState(false);
   const fileInputRef = useRef(null);
   const ADMIN_UID = "msLzg2LxX7Rd3WKVwaqmhWl9KUk2";
+  
 
   useEffect(() => {
     const auth = getAuth();
@@ -57,21 +61,24 @@ function Profile() {
         );
         const projectSnap = await getDocs(projectQuery);
 
-        setUserData({
-          ...data,
-          email: currentUser.email,
-          photoURL: data.photoURL || currentUser.photoURL || "",
-          joinedAt: currentUser.metadata?.creationTime,
-          role,
-        });
+      setUserData({
+        ...data,
+        uid: currentUser.uid,
+        email: currentUser.email,
+        photoURL: data.photoURL || currentUser.photoURL || "",
+        joinedAt: currentUser.metadata?.creationTime,
+        role,
+        views: typeof data.views === 'number' ? data.views : 0, 
+      });
 
-        setEditForm({
-          fullName: data.fullName || "",
-          country: data.country || "",
-          quote: data.quote || "",
-          skills: (data.skills || []).join(", "),
-          photoURL: data.photoURL || "",
-        });
+      setEditForm({
+        fullName: data.fullName || "",
+        country: data.country || "",
+        quote: data.quote || "",
+        skills: (data.skills || []).join(", "),
+        photoURL: data.photoURL || "",
+        isPublic: data.isPublic !== false, // 👈 default to true if missing
+      });
 
         setProjectCount(projectSnap.size);
       } catch (error) {
@@ -116,7 +123,10 @@ function Profile() {
           .split(",")
           .map((s) => s.trim())
           .filter((s) => s),
+        isPublic: !!editForm.isPublic, 
       };
+
+
 
       await setDoc(doc(db, "users", currentUser.uid), updatedData, {
         merge: true,
@@ -135,6 +145,28 @@ function Profile() {
     setEditForm((prev) => ({ ...prev, photoURL: "" }));
     toast.info("Photo will be removed when you save changes.");
   };
+
+
+  useEffect(() => {
+  const auth = getAuth();
+  const incrementViews = async () => {
+    const currentUser = auth.currentUser;
+    if (!currentUser || currentUser.uid !== userData?.uid) {
+      try {
+        const userDocRef = doc(db, "users", userData.uid);
+        await updateDoc(userDocRef, { views: increment(1) });
+      } catch (err) {
+        console.error("Failed to increment views:", err);
+      }
+    }
+  };
+
+  if (userData?.uid) {
+    incrementViews();
+  }
+}, [userData]);
+
+
 
   if (loading) {
     return (
@@ -183,6 +215,7 @@ function Profile() {
             <p className="text-sm text-gray-400">
               Joined {userData.joinedAt ? moment(userData.joinedAt).format("MMMM D, YYYY") : "Unknown"}
             </p>
+
           </div>
           <button
             onClick={() => setIsModalOpen(true)}
@@ -198,6 +231,12 @@ function Profile() {
           <Info label="Skills" value={(userData.skills || []).join(", ") || "Not added"} />
           <Info label="Quote / Status" value={userData.quote || "“No quote added yet.”"} italic />
           <Info label="Projects Uploaded" value={projectCount} className="font-semibold" />
+                  {typeof userData.views === 'number' && (
+          <p className="text-sm text-gray-500 dark:text-gray-400">
+            👁️ {userData.views} {userData.views === 1 ? 'view' : 'views'}
+          </p>
+        )}
+
           <div>
             <p className="text-sm font-medium text-gray-500 dark:text-gray-400">Badges:</p>
             <div className="flex gap-2 mt-1">
@@ -210,8 +249,63 @@ function Profile() {
               )}
             </div>
           </div>
+
+<div className="mb-4">
+  <label htmlFor="publicToggle" className="text-sm font-medium text-gray-700 dark:text-gray-200 flex justify-between items-center mb-1">
+    <span>Make portfolio public</span>
+<div
+  className={`w-11 h-6 flex items-center bg-gray-300 dark:bg-gray-600 rounded-full p-1 cursor-pointer transition-all duration-300 ${
+    editForm.isPublic ? "bg-indigo-500" : "bg-gray-400"
+  }`}
+  onClick={async () => {
+    const auth = getAuth();
+    const currentUser = auth.currentUser;
+    const newValue = !editForm.isPublic;
+
+    setEditForm((prev) => ({ ...prev, isPublic: newValue }));
+
+    try {
+      await updateDoc(doc(db, "users", currentUser.uid), {
+        isPublic: newValue,
+      });
+
+      toast.success(
+        `Portfolio is now ${newValue ? "public" : "private"}.`
+      );
+
+      setUserData((prev) => ({ ...prev, isPublic: newValue }));
+    } catch (err) {
+      console.error("Failed to update isPublic:", err);
+      toast.error("Failed to update visibility.");
+    }
+  }}
+>
+  <div
+    className={`bg-white w-4 h-4 rounded-full shadow-md transform transition-transform duration-300 ${
+      editForm.isPublic ? "translate-x-5" : "translate-x-0"
+    }`}
+  ></div>
+</div>
+
+  </label>
+<p className="text-xs text-gray-500 dark:text-gray-400">
+  {editForm.isPublic
+    ? "You have selected to make your portfolio public. Click 'Save Changes' to apply."
+    : "You have selected to keep your portfolio private. Click 'Save Changes' to apply."}
+</p>
+<p className="text-xs text-gray-500 dark:text-gray-400">
+  {userData.isPublic
+    ? "Your portfolio is currently visible to the public."
+    : "Your portfolio is private and not visible to others."}
+</p>
+
+</div>
+
+
         </div>
       </div>
+
+
 
       {isModalOpen && (
         <div className="fixed inset-0 z-50 bg-black bg-opacity-40 flex justify-center items-center px-4">

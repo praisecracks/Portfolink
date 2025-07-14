@@ -28,9 +28,9 @@ function ResumeGenerator() {
   const resumeRef = useRef();
 
   const templateClasses = {
-    modern: 'bg-white shadow-lg p-6 md:p-10 rounded-lg text-gray-800 font-sans',
-    classic: 'bg-white p-8 rounded-md text-gray-900 font-serif border-l-4 border-gray-600',
-    elegant: 'bg-gray-50 p-10 rounded-lg text-indigo-800 italic font-serif border-l-4 border-indigo-400',
+    modern: 'bg-white shadow-lg p-4 sm:p-8 rounded-lg text-gray-800 font-sans text-sm sm:text-base leading-relaxed sm:leading-loose',
+    classic: 'bg-white p-6 sm:p-8 rounded-md text-gray-900 font-serif border-l-4 border-gray-600 text-sm sm:text-base',
+    elegant: 'bg-gray-50 p-6 sm:p-10 rounded-lg text-indigo-800 italic font-serif border-l-4 border-indigo-400 text-sm sm:text-base',
   };
 
   useEffect(() => {
@@ -103,34 +103,50 @@ function ResumeGenerator() {
     }
   };
 
-  if (loading) return <p className="text-center p-10"> <BoopLoader /> </p>;
+  if (loading) return <p className="text-center p-10"><BoopLoader /></p>;
   if (!user) return <p className="text-center p-10 text-red-500">⚠️ Please log in.</p>;
   if (!profile) return <p className="text-center p-10 text-red-500">⚠️ No profile data.</p>;
 
-  const activeTemplateStyles = templateStyles[selectedTemplate] || {};
-
   return (
-    <div className="max-w-4xl mx-auto p-6">
-      <div className="text-right mb-6 space-x-3">
-        <button onClick={() => setEditMode(!editMode)} className="px-4 py-2 border border-indigo-600 text-indigo-600 rounded">
+    <div className="max-w-4xl mx-auto px-4 sm:px-6 py-6">
+      {/* Responsive Action Buttons */}
+      <div className="flex flex-col sm:flex-row sm:justify-end items-stretch gap-3 mb-6">
+        <button
+          onClick={() => setEditMode(!editMode)}
+          className="px-4 py-2 border border-indigo-600 text-indigo-600 rounded hover:bg-indigo-50"
+        >
           {editMode ? 'Cancel' : 'Edit Resume'}
         </button>
+
         {editMode && (
-          <button onClick={saveProfile} className="px-4 py-2 bg-indigo-600 text-white rounded">
+          <button
+            onClick={saveProfile}
+            className="px-4 py-2 bg-indigo-600 text-white rounded hover:bg-indigo-700"
+          >
             Save Changes
           </button>
         )}
-        <button onClick={handleDownloadPDF} className="px-4 py-2 bg-green-600 text-white rounded">
+
+        <button
+          onClick={handleDownloadPDF}
+          className="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700"
+        >
           Export PDF
         </button>
-        <button onClick={handleDownloadDOCX} className="px-4 py-2 bg-yellow-500 text-white rounded">
+
+        <button
+          onClick={handleDownloadDOCX}
+          className="px-4 py-2 bg-yellow-500 text-white rounded hover:bg-yellow-600"
+        >
           Export DOCX
         </button>
       </div>
 
+      {/* Template Picker */}
       <TemplatePicker selectedTemplate={selectedTemplate} onChange={setSelectedTemplate} />
 
-      <div ref={resumeRef} className={`${templateClasses[selectedTemplate]} leading-relaxed`}>
+      {/* Resume Content */}
+      <div ref={resumeRef} className={`${templateClasses[selectedTemplate]} mt-6`}>
         <ResumeHeader
           profile={profile}
           editMode={editMode}
