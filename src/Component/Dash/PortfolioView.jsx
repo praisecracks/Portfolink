@@ -176,7 +176,7 @@ function PortfolioView() {
       {/* HEADER */}
 <header className="z-50 fixed top-0 w-full bg-indigo-700 dark:bg-indigo-900 shadow-md px-4 py-3 flex justify-between items-center">
   {/* Logo/Brand */}
-  <div className="flex items-center gap-2">
+  <div className="flex items-center gap-2 md:pl-40">
     <div className="bg-white text-indigo-700 font-bold rounded-full w-10 h-10 flex items-center justify-center text-xl">
       {profile?.fullName?.charAt(0) || 'U'}
     </div>

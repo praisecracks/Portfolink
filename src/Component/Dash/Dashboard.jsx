@@ -273,21 +273,29 @@ const chartData = generateChartData();
 
 
 
-
-<section className="mt-10 bg-white dark:bg-gray-800 rounded-lg p-6 shadow-sm text-sm">
+<section className="mt-10 bg-white dark:bg-gray-800 rounded-lg p-6 shadow-sm text-sm focus:outline-none outline-none ring-0">
   <h3 className="text-lg font-semibold mb-4 text-gray-700 dark:text-gray-200">Activity Overview</h3>
-  <ResponsiveContainer width="100%" height={300}>
+  
+  <ResponsiveContainer
+    width="100%"
+    height={300}
+    className="focus:outline-none outline-none ring-0"
+  >
     <LineChart data={chartData}>
       <CartesianGrid strokeDasharray="3 3" />
       <XAxis dataKey="name" stroke="#8884d8" />
       <YAxis allowDecimals={false} />
       <Tooltip />
-      <Line type="monotone" dataKey="Projects" stroke="#6366F1" strokeWidth={2} dot={{ r: 4 }} />
+      <Line
+        type="monotone"
+        dataKey="Projects"
+        stroke="#6366F1"
+        strokeWidth={2}
+        dot={{ r: 4 }}
+      />
     </LineChart>
   </ResponsiveContainer>
 </section>
-
-
 
 
 

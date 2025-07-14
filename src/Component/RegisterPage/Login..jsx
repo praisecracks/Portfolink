@@ -5,23 +5,23 @@ import {
   signInWithEmailAndPassword,
   signInWithPopup,
   sendPasswordResetEmail,
+  fetchSignInMethodsForEmail,
 } from 'firebase/auth';
 import { auth, googleProvider, githubProvider, db } from '../../firebase';
 import { doc, setDoc } from 'firebase/firestore';
 import { toast } from 'react-toastify';
 import { motion } from 'framer-motion';
-import logo from "../../assets/portLogo.png"
+import logo from "../../assets/portLogo.png";
 import 'react-toastify/dist/ReactToastify.css';
 
 function Login() {
-
   const navigate = useNavigate();
   const [formData, setFormData] = useState({ email: '', password: '' });
   const [errors, setErrors] = useState({});
   const [showPassword, setShowPassword] = useState(false);
   const [remember, setRemember] = useState(false);
-  const [loading, setLoading] = useState(false); // <-- Add this line
-
+  const [loading, setLoading] = useState(false);
+  const [loadingProvider, setLoadingProvider] = useState(null);
 
   useEffect(() => {
     const savedEmail = localStorage.getItem('rememberedEmail');
@@ -43,79 +43,72 @@ function Login() {
     return newErrors;
   };
 
-const handleSubmit = async (e) => {
-  e.preventDefault();
-  const validationErrors = validate();
-  if (Object.keys(validationErrors).length > 0) return setErrors(validationErrors);
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    const validationErrors = validate();
+    if (Object.keys(validationErrors).length > 0) return setErrors(validationErrors);
 
-  setLoading(true); // Start loading
-
-  try {
-    const res = await signInWithEmailAndPassword(auth, formData.email, formData.password);
-
-    if (remember) {
-      localStorage.setItem('rememberedEmail', formData.email);
-    } else {
-      localStorage.removeItem('rememberedEmail');
-    }
-
-    await setDoc(doc(db, 'users', res.user.uid), {
-      uid: res.user.uid,
-      email: res.user.email,
-      provider: 'password',
-      lastLogin: new Date(),
-    }, { merge: true });
-
-    toast.success("Welcome back!");
-    navigate('/dashboard');
-  } catch (error) {
-    toast.error("Login failed. Please check your credentials.");
-    console.error(error);
-  } finally {
-    setLoading(false); // Stop loading
-  }
-};
-
-
-  const handleGoogleLogin = async () => {
+    setLoading(true);
     try {
-      const res = await signInWithPopup(auth, googleProvider);
+      const res = await signInWithEmailAndPassword(auth, formData.email, formData.password);
+
+      if (remember) {
+        localStorage.setItem('rememberedEmail', formData.email);
+      } else {
+        localStorage.removeItem('rememberedEmail');
+      }
 
       await setDoc(doc(db, 'users', res.user.uid), {
         uid: res.user.uid,
-        name: res.user.displayName,
         email: res.user.email,
-        photoURL: res.user.photoURL,
-        provider: 'google',
-        createdAt: new Date(),
+        provider: 'password',
+        lastLogin: new Date(),
       }, { merge: true });
 
-      toast.success("Signed in with Google");
+      toast.success("Welcome back!");
       navigate('/dashboard');
     } catch (error) {
-      toast.error("Google sign-in failed");
+      toast.error("Login failed. Please check your credentials.");
       console.error(error);
+    } finally {
+      setLoading(false);
     }
   };
 
-  const handleGitHubLogin = async () => {
+  const handleProviderLogin = async (providerName, providerObj) => {
     try {
-      const res = await signInWithPopup(auth, githubProvider);
+      setLoadingProvider(providerName);
+      const result = await signInWithPopup(auth, providerObj);
+      const user = result.user;
 
-      await setDoc(doc(db, 'users', res.user.uid), {
-        uid: res.user.uid,
-        name: res.user.displayName,
-        email: res.user.email,
-        photoURL: res.user.photoURL,
-        provider: 'github',
-        createdAt: new Date(),
+      await setDoc(doc(db, 'users', user.uid), {
+        uid: user.uid,
+        name: user.displayName || `${providerName} User`,
+        email: user.email,
+        photoURL: user.photoURL || null,
+        provider: user.providerData[0]?.providerId || providerName,
+        lastLogin: new Date(),
       }, { merge: true });
 
-      toast.success("Signed in with GitHub");
+      toast.success(`Signed in with ${providerName}`);
       navigate('/dashboard');
-    } catch (error) {
-      toast.error("GitHub sign-in failed");
-      console.error(error);
+    } catch (err) {
+      if (err.code === 'auth/account-exists-with-different-credential') {
+        const email = err.customData?.email;
+        const methods = await fetchSignInMethodsForEmail(auth, email);
+        if (methods.includes('google.com')) {
+          toast.error("This email is already registered with Google. Try signing in with Google.");
+        } else if (methods.includes('password')) {
+          toast.error("This email is already registered with email/password.");
+        } else {
+          toast.error("This email is already registered with a different provider.");
+        }
+      } else {
+        console.error(err);
+        toast.error(`${providerName} sign-in failed`);
+      }
+    } finally {
+      setLoadingProvider(null);
     }
   };
 
@@ -132,9 +125,6 @@ const handleSubmit = async (e) => {
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-indigo-100 via-white to-blue-50 px-4 py-10 text-gray-900 font-inter">
-      
-
-
       <motion.div
         initial={{ opacity: 0, y: 50 }}
         animate={{ opacity: 1, y: 0 }}
@@ -172,7 +162,6 @@ const handleSubmit = async (e) => {
             <span
               className="absolute right-3 top-[36px] cursor-pointer text-gray-600"
               onClick={() => setShowPassword(prev => !prev)}
-              aria-label={showPassword ? "Hide password" : "Show password"}
             >
               {showPassword ? <FaEyeSlash /> : <FaEye />}
             </span>
@@ -197,10 +186,9 @@ const handleSubmit = async (e) => {
           <button
             type="submit"
             className="w-full bg-indigo-600 text-white py-2 rounded-lg font-semibold hover:bg-indigo-700 transition duration-300"
+            disabled={loading}
           >
-           {
-            loading ? 'logging in...' : 'Login' 
-           } 
+            {loading ? 'Logging in...' : 'Login'}
           </button>
         </form>
 
@@ -213,19 +201,27 @@ const handleSubmit = async (e) => {
         <div className="flex flex-col gap-3">
           <button
             type="button"
-            onClick={handleGoogleLogin}
+            onClick={() => handleProviderLogin('Google', googleProvider)}
             className="flex items-center justify-center gap-2 border border-gray-300 py-2 rounded-lg hover:bg-gray-50 transition"
           >
-            <FaGoogle className="text-red-500" />
-            Login with Google
+            {loadingProvider === 'Google' ? 'Signing in...' : (
+              <>
+                <FaGoogle className="text-red-500" />
+                Login with Google
+              </>
+            )}
           </button>
           <button
             type="button"
-            onClick={handleGitHubLogin}
+            onClick={() => handleProviderLogin('GitHub', githubProvider)}
             className="flex items-center justify-center gap-2 border border-gray-300 py-2 rounded-lg hover:bg-gray-50 transition"
           >
-            <FaGithub className="text-gray-800" />
-            Login with GitHub
+            {loadingProvider === 'GitHub' ? 'Signing in...' : (
+              <>
+                <FaGithub className="text-gray-800" />
+                Login with GitHub
+              </>
+            )}
           </button>
         </div>
 
@@ -237,13 +233,13 @@ const handleSubmit = async (e) => {
         </p>
       </motion.div>
 
-       <motion.img
-  src={logo}
-  alt=""
-  className="hidden sm:block "
-  animate={{ y: [0, -30, 0] }}
-  transition={{ repeat: Infinity, duration: 4, ease: "easeInOut" }}
-/>
+      <motion.img
+        src={logo}
+        alt=""
+        className="hidden sm:block"
+        animate={{ y: [0, -30, 0] }}
+        transition={{ repeat: Infinity, duration: 4, ease: "easeInOut" }}
+      />
     </div>
   );
 }

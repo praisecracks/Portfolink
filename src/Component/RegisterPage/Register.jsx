@@ -8,6 +8,8 @@ import { db } from '../../firebase';
 import { doc, setDoc } from 'firebase/firestore';
 import { toast } from 'react-toastify';
 import regiterart from '../../assets/register-art.png';
+import { fetchSignInMethodsForEmail, linkWithCredential } from 'firebase/auth';
+
 
 function Register() {
   const [formData, setFormData] = useState({
@@ -17,9 +19,8 @@ function Register() {
     confirmPassword: ''
   });
   const [errors, setErrors] = useState({});
+  const [loadingProvider, setLoadingProvider] = useState(null);
   const navigate = useNavigate();
-
-  
 
   const handleChange = (e) => {
     setFormData((prev) => ({ ...prev, [e.target.name]: e.target.value }));
@@ -35,13 +36,22 @@ function Register() {
     return newErrors;
   };
 
+  
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     const validationErrors = validate();
     if (Object.keys(validationErrors).length > 0) return setErrors(validationErrors);
 
     try {
-      await createUserWithEmailAndPassword(auth, formData.email, formData.password);
+      const res = await createUserWithEmailAndPassword(auth, formData.email, formData.password);
+      await setDoc(doc(db, 'users', res.user.uid), {
+        uid: res.user.uid,
+        name: formData.name,
+        email: formData.email,
+        provider: "email/password",
+        createdAt: new Date()
+      });
       toast.success("Account created successfully ✅");
       navigate('/login');
     } catch (err) {
@@ -49,41 +59,58 @@ function Register() {
     }
   };
 
-  const handleGoogle = async () => {
-    try {
-      await signInWithPopup(auth, googleProvider);
-      toast.success("Signed in with Google");
-      navigate("/dashboard");
-    } catch {
-      toast.error("Google sign-in failed");
+  const handleProviderLogin = async (providerName, providerObj) => {
+  try {
+    setLoadingProvider(providerName);
+    const result = await signInWithPopup(auth, providerObj);
+    const user = result.user;
+
+    await setDoc(doc(db, 'users', user.uid), {
+      uid: user.uid,
+      name: user.displayName || `${providerName} User`,
+      email: user.email,
+      photoURL: user.photoURL || null,
+      provider: user.providerData[0]?.providerId || providerName,
+      createdAt: new Date()
+    });
+
+    toast.success(`Signed in with ${providerName}`);
+    navigate('/dashboard');
+  } catch (err) {
+    // Handle account exists with different credential
+    if (err.code === 'auth/account-exists-with-different-credential') {
+      const pendingCred = err.credential;
+      const email = err.customData.email;
+
+      try {
+        // Get the list of sign-in methods associated with this email
+        const methods = await fetchSignInMethodsForEmail(auth, email);
+
+        if (methods.includes('password')) {
+          toast.error(`An account already exists with this email. Try logging in with email/password.`);
+        } else if (methods.includes('google.com')) {
+          toast.error(`An account already exists with Google. Please sign in with Google.`);
+        } else {
+          toast.error(`An account already exists with a different provider.`);
+        }
+      } catch (fetchErr) {
+        console.error(fetchErr);
+        toast.error('Error fetching sign-in methods');
+      }
+    } else {
+      console.error(err);
+      toast.error(`${providerName} sign-in failed`);
     }
-  };
+  } finally {
+    setLoadingProvider(null);
+  }
+};
 
-  const handleGitHub = async () => {
-    try {
-      await signInWithPopup(auth, githubProvider);
-      toast.success("Signed in with GitHub");
-      navigate("/dashboard");
-    } catch {
-      toast.error("GitHub sign-in failed");
-    }
-    const res = await createUserWithEmailAndPassword(auth, formData.email, formData.password);
-
-// Save user info to Firestore
-await setDoc(doc(db, 'users', res.user.uid), {
-  uid: res.user.uid,
-  name: formData.name,
-  email: formData.email,
-  createdAt: new Date()
-});
-
-  };
-  
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-indigo-100 via-white to-blue-50 flex items-center justify-center px-4 py-10">
       <div className="grid grid-cols-1 md:grid-cols-2 gap-10 max-w-5xl w-full items-center">
-        {/* Animated Image Section (Desktop only) */}
+        {/* Animation */}
         <motion.div
           initial={{ scale: 0.95, opacity: 0 }}
           animate={{ scale: 1, opacity: 1 }}
@@ -98,13 +125,14 @@ await setDoc(doc(db, 'users', res.user.uid), {
             transition={{ repeat: Infinity, duration: 4, ease: "easeInOut" }}
           />
         </motion.div>
+
         {/* Form Section */}
         <motion.div
           initial={{ opacity: 0, y: 50 }}
           animate={{ opacity: 1, y: 0 }}
           exit={{ opacity: 0, y: -50 }}
           transition={{ duration: 0.5 }}
-          className="bg-white p-8 rounded-xl shadow-lg border border-indigo-200"
+          className="bg-white p-8 rounded-xl shadow-lg border border-indigo-200 w-full"
         >
           <h2 className="text-2xl font-bold text-indigo-700 mb-6 text-center">
             Create Your Portfolink Account
@@ -117,7 +145,7 @@ await setDoc(doc(db, 'users', res.user.uid), {
               value={formData.name}
               onChange={handleChange}
               placeholder="Full Name"
-              className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-indigo-500"
+              className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-gray-400"
             />
             {errors.name && <p className="text-sm text-red-500">{errors.name}</p>}
 
@@ -127,7 +155,7 @@ await setDoc(doc(db, 'users', res.user.uid), {
               value={formData.email}
               onChange={handleChange}
               placeholder="Email Address"
-              className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-indigo-500"
+              className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-gray-400"
             />
             {errors.email && <p className="text-sm text-red-500">{errors.email}</p>}
 
@@ -137,7 +165,7 @@ await setDoc(doc(db, 'users', res.user.uid), {
               value={formData.password}
               onChange={handleChange}
               placeholder="Password"
-              className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-indigo-500"
+              className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-gray-400"
             />
             {errors.password && <p className="text-sm text-red-500">{errors.password}</p>}
 
@@ -147,7 +175,7 @@ await setDoc(doc(db, 'users', res.user.uid), {
               value={formData.confirmPassword}
               onChange={handleChange}
               placeholder="Confirm Password"
-              className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-indigo-500"
+              className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-gray-400"
             />
             {errors.confirmPassword && <p className="text-sm text-red-500">{errors.confirmPassword}</p>}
 
@@ -167,18 +195,20 @@ await setDoc(doc(db, 'users', res.user.uid), {
 
           <div className="flex flex-col gap-3">
             <button
-              onClick={handleGoogle}
+              onClick={() => handleProviderLogin("Google", googleProvider)}
+              disabled={loadingProvider === "Google"}
               className="flex items-center justify-center gap-2 border border-gray-300 py-2 rounded-md hover:bg-gray-50 transition"
             >
               <FaGoogle className="text-red-500" />
-              Sign up with Google
+              {loadingProvider === "Google" ? "Signing in..." : "Sign up with Google"}
             </button>
             <button
-              onClick={handleGitHub}
+              onClick={() => handleProviderLogin("GitHub", githubProvider)}
+              disabled={loadingProvider === "GitHub"}
               className="flex items-center justify-center gap-2 border border-gray-300 py-2 rounded-md hover:bg-gray-50 transition"
             >
               <FaGithub className="text-gray-800" />
-              Sign up with GitHub
+              {loadingProvider === "GitHub" ? "Signing in..." : "Sign up with GitHub"}
             </button>
           </div>
 
@@ -189,8 +219,6 @@ await setDoc(doc(db, 'users', res.user.uid), {
             </Link>
           </p>
         </motion.div>
-
-        
       </div>
     </div>
   );

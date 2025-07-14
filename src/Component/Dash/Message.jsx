@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { auth, db } from '../../firebase';
+import { db } from '../../firebase';
 import {
   collection,
   onSnapshot,
@@ -8,6 +8,8 @@ import {
   doc,
   deleteDoc,
   updateDoc,
+  getDocs,
+  where,
   limit,
   startAfter,
 } from 'firebase/firestore';
@@ -22,42 +24,59 @@ function Messages() {
   const [lastDoc, setLastDoc] = useState(null);
   const [hasMore, setHasMore] = useState(true);
   const [filter, setFilter] = useState('all');
+  const [adminId, setAdminId] = useState(null);
+  const [confirmDeleteId, setConfirmDeleteId] = useState(null);
 
-  const currentUser = auth.currentUser;
   const PAGE_SIZE = 10;
 
   useEffect(() => {
-    if (!currentUser) return;
+    const fetchAdminUIDAndMessages = async () => {
+      try {
+        const adminQuery = query(collection(db, 'users'), where('role', '==', 'Admin'));
+        const snapshot = await getDocs(adminQuery);
 
-    const inboxRef = collection(db, `messages/${currentUser.uid}/inbox`);
-    const baseQuery = query(inboxRef, orderBy('timestamp', 'desc'), limit(PAGE_SIZE));
+        const resolvedAdminId = !snapshot.empty
+          ? snapshot.docs[0].id
+          : 'msLzg2LxX7Rd3WKVwaqmhWl9KUk2'; // fallback admin UID
 
-    const unsubscribe = onSnapshot(baseQuery, (snapshot) => {
-      const docs = snapshot.docs;
-      const msgs = docs.map((doc) => ({ id: doc.id, ...doc.data() }));
-      setMessages(msgs);
-      setLastDoc(docs[docs.length - 1]);
-      setHasMore(docs.length === PAGE_SIZE);
-      setLoading(false);
-    });
+        setAdminId(resolvedAdminId);
 
-    return () => unsubscribe();
-  }, [currentUser]);
+        const inboxRef = collection(db, `messages/${resolvedAdminId}/inbox`);
+        const baseQuery = query(inboxRef, orderBy('timestamp', 'desc'), limit(PAGE_SIZE));
+
+        const unsubscribe = onSnapshot(baseQuery, (snapshot) => {
+          const docs = snapshot.docs;
+          const msgs = docs.map((doc) => ({ id: doc.id, ...doc.data() }));
+          setMessages(msgs);
+          setLastDoc(docs[docs.length - 1]);
+          setHasMore(docs.length === PAGE_SIZE);
+          setLoading(false);
+        });
+
+        return () => unsubscribe();
+      } catch (error) {
+        console.error('Error fetching admin messages:', error);
+        setLoading(false);
+      }
+    };
+
+    fetchAdminUIDAndMessages();
+  }, []);
 
   const handleDelete = async (id) => {
-    if (!currentUser || !window.confirm('Delete this message?')) return;
-    await deleteDoc(doc(db, `messages/${currentUser.uid}/inbox`, id));
+    if (!adminId) return;
+    await deleteDoc(doc(db, `messages/${adminId}/inbox`, id));
   };
 
   const handleMarkAsRead = async (id, read) => {
-    if (!currentUser) return;
-    await updateDoc(doc(db, `messages/${currentUser.uid}/inbox`, id), { read: !read });
+    if (!adminId) return;
+    await updateDoc(doc(db, `messages/${adminId}/inbox`, id), { read: !read });
   };
 
   const loadMore = async () => {
-    if (!currentUser || !lastDoc) return;
+    if (!adminId || !lastDoc) return;
 
-    const inboxRef = collection(db, `messages/${currentUser.uid}/inbox`);
+    const inboxRef = collection(db, `messages/${adminId}/inbox`);
     const moreQuery = query(
       inboxRef,
       orderBy('timestamp', 'desc'),
@@ -65,13 +84,7 @@ function Messages() {
       limit(PAGE_SIZE)
     );
 
-    const snapshot = await new Promise((resolve) => {
-      const unsub = onSnapshot(moreQuery, (snap) => {
-        unsub();
-        resolve(snap);
-      });
-    });
-
+    const snapshot = await getDocs(moreQuery);
     const docs = snapshot.docs;
     const newMessages = docs.map((doc) => ({ id: doc.id, ...doc.data() }));
 
@@ -177,6 +190,9 @@ function Messages() {
                           ? format(msg.timestamp.toDate(), 'PPpp')
                           : msg.timestamp || 'No timestamp'}
                       </p>
+                      <p className="text-xs italic text-indigo-500 mt-2">
+                        Source: {msg.source || 'Portfolio'}
+                      </p>
                     </div>
 
                     <div className="flex items-center gap-3">
@@ -188,7 +204,7 @@ function Messages() {
                         <FaCheckCircle size={18} />
                       </button>
                       <button
-                        onClick={() => handleDelete(msg.id)}
+                        onClick={() => setConfirmDeleteId(msg.id)}
                         title="Delete Message"
                         className="text-red-500 hover:text-red-700 dark:hover:text-red-400"
                       >
@@ -218,6 +234,37 @@ function Messages() {
           >
             Load More
           </button>
+        </div>
+      )}
+
+      {/* Modal OUTSIDE LOOP */}
+      {confirmDeleteId && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white dark:bg-gray-800 p-6 rounded shadow-md w-full max-w-sm">
+            <h2 className="text-lg font-semibold text-gray-800 dark:text-white mb-4">
+              Confirm Delete
+            </h2>
+            <p className="text-gray-600 dark:text-gray-300 mb-6">
+              Are you sure you want to delete this message?
+            </p>
+            <div className="flex justify-end gap-4">
+              <button
+                onClick={() => setConfirmDeleteId(null)}
+                className="px-4 py-2 rounded bg-gray-300 hover:bg-gray-400 text-gray-800"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={async () => {
+                  await handleDelete(confirmDeleteId);
+                  setConfirmDeleteId(null);
+                }}
+                className="px-4 py-2 rounded bg-red-600 hover:bg-red-700 text-white"
+              >
+                Delete
+              </button>
+            </div>
+          </div>
         </div>
       )}
     </div>
