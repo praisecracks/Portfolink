@@ -2,21 +2,23 @@ import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { FaGithub, FaGoogle } from 'react-icons/fa';
 import { motion } from 'framer-motion';
-import { auth, googleProvider, githubProvider } from '../../firebase';
-import { createUserWithEmailAndPassword, signInWithPopup } from 'firebase/auth';
-import { db } from '../../firebase';
+import { auth, googleProvider, githubProvider, db } from '../../firebase';
+import {
+  createUserWithEmailAndPassword,
+  signInWithPopup,
+  fetchSignInMethodsForEmail,
+} from 'firebase/auth';
 import { doc, setDoc } from 'firebase/firestore';
 import { toast } from 'react-toastify';
-import regiterart from '../../assets/register-art.png';
-import { fetchSignInMethodsForEmail, linkWithCredential } from 'firebase/auth';
-
+import registerart from '../../assets/img.png';
+import logo from "../../assets/portlogo.png"
 
 function Register() {
   const [formData, setFormData] = useState({
     name: '',
     email: '',
     password: '',
-    confirmPassword: ''
+    confirmPassword: '',
   });
   const [errors, setErrors] = useState({});
   const [loadingProvider, setLoadingProvider] = useState(null);
@@ -29,197 +31,250 @@ function Register() {
 
   const validate = () => {
     const newErrors = {};
-    if (!formData.name.trim()) newErrors.name = "Full name is required.";
-    if (!formData.email.includes('@')) newErrors.email = "Enter a valid email.";
-    if (formData.password.length < 6) newErrors.password = "Password must be at least 6 characters.";
-    if (formData.password !== formData.confirmPassword) newErrors.confirmPassword = "Passwords do not match.";
+    if (!formData.name.trim()) newErrors.name = 'Full name is required.';
+    if (!formData.email.includes('@')) newErrors.email = 'Enter a valid email.';
+    if (formData.password.length < 6)
+      newErrors.password = 'Password must be at least 6 characters.';
+    if (formData.password !== formData.confirmPassword)
+      newErrors.confirmPassword = 'Passwords do not match.';
     return newErrors;
   };
-
-  
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     const validationErrors = validate();
-    if (Object.keys(validationErrors).length > 0) return setErrors(validationErrors);
+    if (Object.keys(validationErrors).length > 0)
+      return setErrors(validationErrors);
 
     try {
-      const res = await createUserWithEmailAndPassword(auth, formData.email, formData.password);
+      const res = await createUserWithEmailAndPassword(
+        auth,
+        formData.email,
+        formData.password
+      );
       await setDoc(doc(db, 'users', res.user.uid), {
         uid: res.user.uid,
         name: formData.name,
         email: formData.email,
-        provider: "email/password",
-        createdAt: new Date()
+        provider: 'email/password',
+        createdAt: new Date(),
       });
-      toast.success("Account created successfully ✅");
+      toast.success('Account created successfully ✅');
       navigate('/login');
     } catch (err) {
-      toast.error("Error creating account");
+      toast.error('Error creating account');
+      console.error(err);
     }
   };
 
   const handleProviderLogin = async (providerName, providerObj) => {
-  try {
-    setLoadingProvider(providerName);
-    const result = await signInWithPopup(auth, providerObj);
-    const user = result.user;
+    try {
+      setLoadingProvider(providerName);
+      const result = await signInWithPopup(auth, providerObj);
+      const user = result.user;
 
-    await setDoc(doc(db, 'users', user.uid), {
-      uid: user.uid,
-      name: user.displayName || `${providerName} User`,
-      email: user.email,
-      photoURL: user.photoURL || null,
-      provider: user.providerData[0]?.providerId || providerName,
-      createdAt: new Date()
-    });
+      await setDoc(doc(db, 'users', user.uid), {
+        uid: user.uid,
+        name: user.displayName || `${providerName} User`,
+        email: user.email,
+        photoURL: user.photoURL || null,
+        provider: user.providerData[0]?.providerId || providerName,
+        createdAt: new Date(),
+      });
 
-    toast.success(`Signed in with ${providerName}`);
-    navigate('/dashboard');
-  } catch (err) {
-    // Handle account exists with different credential
-    if (err.code === 'auth/account-exists-with-different-credential') {
-      const pendingCred = err.credential;
-      const email = err.customData.email;
-
-      try {
-        // Get the list of sign-in methods associated with this email
+      toast.success(`Signed in with ${providerName}`);
+      navigate('/dashboard');
+    } catch (err) {
+      if (err.code === 'auth/account-exists-with-different-credential') {
+        const email = err.customData?.email;
         const methods = await fetchSignInMethodsForEmail(auth, email);
-
         if (methods.includes('password')) {
-          toast.error(`An account already exists with this email. Try logging in with email/password.`);
+          toast.error(
+            'This email is already registered. Try logging in with email/password.'
+          );
         } else if (methods.includes('google.com')) {
-          toast.error(`An account already exists with Google. Please sign in with Google.`);
+          toast.error(
+            'This email is already registered with Google. Try signing in with Google.'
+          );
         } else {
-          toast.error(`An account already exists with a different provider.`);
+          toast.error('This email is already registered with another provider.');
         }
-      } catch (fetchErr) {
-        console.error(fetchErr);
-        toast.error('Error fetching sign-in methods');
+      } else {
+        console.error(err);
+        toast.error(`${providerName} sign-in failed`);
       }
-    } else {
-      console.error(err);
-      toast.error(`${providerName} sign-in failed`);
+    } finally {
+      setLoadingProvider(null);
     }
-  } finally {
-    setLoadingProvider(null);
-  }
-};
-
+  };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-indigo-100 via-white to-blue-50 flex items-center justify-center px-4 py-10">
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-10 max-w-5xl w-full items-center">
-        {/* Animation */}
-        <motion.div
+    <div className="min-h-screen flex flex-col md:flex-row bg-gradient-to-br from-[#0f172a] via-[#1e293b] to-[#0f172a] text-gray-200 font-inter overflow-hidden relative">
+
+      {/* Left Side (Futuristic Content) */}
+      <motion.div
+        initial={{ opacity: 0, x: -40 }}
+        animate={{ opacity: 1, x: 0 }}
+        transition={{ duration: 0.8 }}
+        className="flex-1 hidden md:flex flex-col items-center justify-center px-10 relative overflow-hidden"
+      >
+        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,rgba(120,80,250,0.15)_0%,transparent_70%)]"></div>
+        <motion.img
+          src={registerart}
+          alt="Creative workspace"
+          className="w-3/4 max-w-lg object-contain mb-6 rounded-2xl opacity-90"
           initial={{ scale: 0.95, opacity: 0 }}
           animate={{ scale: 1, opacity: 1 }}
-          transition={{ duration: 0.6, delay: 0.2 }}
-          className="hidden md:block"
-        >
-          <motion.img
-            src={regiterart}
-            alt="Animated Illustration"
-            className="w-full max-w-md mx-auto"
-            animate={{ y: [0, -10, 0] }}
-            transition={{ repeat: Infinity, duration: 4, ease: "easeInOut" }}
-          />
-        </motion.div>
-
-        {/* Form Section */}
+          transition={{ duration: 1 }}
+        />
         <motion.div
-          initial={{ opacity: 0, y: 50 }}
-          animate={{ opacity: 1, y: 0 }}
-          exit={{ opacity: 0, y: -50 }}
-          transition={{ duration: 0.5 }}
-          className="bg-white p-8 rounded-xl shadow-lg border border-indigo-200 w-full"
+          initial={{ y: 20, opacity: 0 }}
+          animate={{ y: 0, opacity: 1 }}
+          transition={{ delay: 0.3 }}
+          className="text-center max-w-md"
         >
-          <h2 className="text-2xl font-bold text-indigo-700 mb-6 text-center">
+          <div className='flex'>
+          <h1 className="text-4xl font-bold bg-gradient-to-r from-pink-400 to-indigo-400 bg-clip-text text-transparent mb-3">
+            Welcome to Portfolink
+          </h1>
+          <img src={logo} alt=""  className='h-10 w-10'/>
+          </div>
+          <p className="text-gray-400 leading-relaxed">
+            Join a community of creators, freelancers, and developers building
+            their personal brand online. Create a stunning portfolio, showcase
+            your work, and connect with opportunities — all in one place.
+          </p>
+          <p className="mt-4 text-sm text-gray-500">
+            Ready to start your journey? Sign up now and let’s make your digital
+            presence shine ✨
+          </p>
+        </motion.div>
+      </motion.div>
+
+      {/* Right Side (Form Section) */}
+      <div className="flex-1 flex items-center justify-center px-6 py-12">
+        <motion.div
+          initial={{ opacity: 0, y: 40 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.6 }}
+          className="z-20 w-full max-w-md p-8 rounded-2xl bg-white/10 backdrop-blur-md shadow-2xl border border-white/20"
+        >
+          <h2 className="text-3xl font-bold text-center mb-6 bg-gradient-to-r from-indigo-400 to-pink-400 bg-clip-text text-transparent">
             Create Your Portfolink Account
           </h2>
 
-          <form onSubmit={handleSubmit} className="space-y-4">
-            <input
-              type="text"
-              name="name"
-              value={formData.name}
-              onChange={handleChange}
-              placeholder="Full Name"
-              className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-gray-400"
-            />
-            {errors.name && <p className="text-sm text-red-500">{errors.name}</p>}
+          <form onSubmit={handleSubmit} className="space-y-5">
+            <div>
+              <label className="block text-sm mb-1">Full Name</label>
+              <input
+                type="text"
+                name="name"
+                value={formData.name}
+                onChange={handleChange}
+                placeholder="John Doe"
+                className="w-full px-4 py-2 rounded-lg bg-white/20 border border-white/30 focus:ring-2 focus:ring-indigo-500 outline-none text-white placeholder-gray-400"
+              />
+              {errors.name && (
+                <p className="text-xs text-red-400 mt-1">{errors.name}</p>
+              )}
+            </div>
 
-            <input
-              type="email"
-              name="email"
-              value={formData.email}
-              onChange={handleChange}
-              placeholder="Email Address"
-              className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-gray-400"
-            />
-            {errors.email && <p className="text-sm text-red-500">{errors.email}</p>}
+            <div>
+              <label className="block text-sm mb-1">Email Address</label>
+              <input
+                type="email"
+                name="email"
+                value={formData.email}
+                onChange={handleChange}
+                placeholder="you@example.com"
+                className="w-full px-4 py-2 rounded-lg bg-white/20 border border-white/30 focus:ring-2 focus:ring-indigo-500 outline-none text-white placeholder-gray-400"
+              />
+              {errors.email && (
+                <p className="text-xs text-red-400 mt-1">{errors.email}</p>
+              )}
+            </div>
 
-            <input
-              type="password"
-              name="password"
-              value={formData.password}
-              onChange={handleChange}
-              placeholder="Password"
-              className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-gray-400"
-            />
-            {errors.password && <p className="text-sm text-red-500">{errors.password}</p>}
+            <div>
+              <label className="block text-sm mb-1">Password</label>
+              <input
+                type="password"
+                name="password"
+                value={formData.password}
+                onChange={handleChange}
+                placeholder="********"
+                className="w-full px-4 py-2 rounded-lg bg-white/20 border border-white/30 focus:ring-2 focus:ring-indigo-500 outline-none text-white placeholder-gray-400"
+              />
+              {errors.password && (
+                <p className="text-xs text-red-400 mt-1">{errors.password}</p>
+              )}
+            </div>
 
-            <input
-              type="password"
-              name="confirmPassword"
-              value={formData.confirmPassword}
-              onChange={handleChange}
-              placeholder="Confirm Password"
-              className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-gray-400"
-            />
-            {errors.confirmPassword && <p className="text-sm text-red-500">{errors.confirmPassword}</p>}
+            <div>
+              <label className="block text-sm mb-1">Confirm Password</label>
+              <input
+                type="password"
+                name="confirmPassword"
+                value={formData.confirmPassword}
+                onChange={handleChange}
+                placeholder="********"
+                className="w-full px-4 py-2 rounded-lg bg-white/20 border border-white/30 focus:ring-2 focus:ring-indigo-500 outline-none text-white placeholder-gray-400"
+              />
+              {errors.confirmPassword && (
+                <p className="text-xs text-red-400 mt-1">
+                  {errors.confirmPassword}
+                </p>
+              )}
+            </div>
 
             <button
               type="submit"
-              className="w-full bg-indigo-600 text-white py-2 rounded-md hover:bg-indigo-700 transition"
+              className="w-full bg-gradient-to-r from-indigo-600 to-pink-600 text-white py-2 rounded-lg font-semibold hover:scale-[1.02] transition duration-300"
             >
               Create Account
             </button>
           </form>
 
           <div className="flex items-center gap-4 my-6">
-            <hr className="flex-grow border-gray-300" />
-            <span className="text-sm text-gray-500">or</span>
-            <hr className="flex-grow border-gray-300" />
+            <hr className="flex-grow border-gray-500/30" />
+            <span className="text-sm text-gray-400">OR</span>
+            <hr className="flex-grow border-gray-500/30" />
           </div>
 
           <div className="flex flex-col gap-3">
             <button
-              onClick={() => handleProviderLogin("Google", googleProvider)}
-              disabled={loadingProvider === "Google"}
-              className="flex items-center justify-center gap-2 border border-gray-300 py-2 rounded-md hover:bg-gray-50 transition"
+              onClick={() => handleProviderLogin('Google', googleProvider)}
+              disabled={loadingProvider === 'Google'}
+              className="flex items-center justify-center gap-2 border border-gray-500/30 bg-white/10 py-2 rounded-lg hover:bg-white/20 transition"
             >
-              <FaGoogle className="text-red-500" />
-              {loadingProvider === "Google" ? "Signing in..." : "Sign up with Google"}
+              <FaGoogle className="text-red-400" />
+              {loadingProvider === 'Google'
+                ? 'Signing in...'
+                : 'Sign up with Google'}
             </button>
             <button
-              onClick={() => handleProviderLogin("GitHub", githubProvider)}
-              disabled={loadingProvider === "GitHub"}
-              className="flex items-center justify-center gap-2 border border-gray-300 py-2 rounded-md hover:bg-gray-50 transition"
+              onClick={() => handleProviderLogin('GitHub', githubProvider)}
+              disabled={loadingProvider === 'GitHub'}
+              className="flex items-center justify-center gap-2 border border-gray-500/30 bg-white/10 py-2 rounded-lg hover:bg-white/20 transition"
             >
-              <FaGithub className="text-gray-800" />
-              {loadingProvider === "GitHub" ? "Signing in..." : "Sign up with GitHub"}
+              <FaGithub className="text-gray-300" />
+              {loadingProvider === 'GitHub'
+                ? 'Signing in...'
+                : 'Sign up with GitHub'}
             </button>
           </div>
 
-          <p className="mt-6 text-center text-sm text-gray-600">
+          <p className="mt-6 text-center text-sm text-gray-400">
             Already have an account?{' '}
-            <Link to="/login" className="text-indigo-600 hover:underline">
+            <Link to="/login" className="text-indigo-400 hover:underline font-medium">
               Login
             </Link>
           </p>
         </motion.div>
       </div>
+
+      <footer className="absolute bottom-4 text-xs text-gray-500 w-full text-center">
+        © {new Date().getFullYear()} Portfolink. Crafted with ❤️ by Praisecrack.
+      </footer>
     </div>
   );
 }

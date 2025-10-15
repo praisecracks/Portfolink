@@ -33,14 +33,23 @@ function BlogPage() {
 Q: Is Portfolink free?  
 A: Yes.
 
-Q: Can I export my portfolio?  
+Q: Can I build resume with portfolink?  
+A: Yes, you can build your resume on portfolink.
+
+Q: Can I export my resume?  
+A: Yes, to formats like PDF, DOCX, etc.
+
+Q: Can I build my portfolio?  
 A: Yes, to formats like PDF, DOCX, etc.
 
 Q: Can I delete my account?  
 A: Yes, from your dashboard.
 
-Q: Can I build and showcase my projects?  
-A: Yes, easily.
+Q: Do the developersnhave access to my details?  
+A: No. Developers do not access your private account information by default. Your data is stored securely and is only accessible to authorized backend systems. In exceptional cases — for example, to investigate a specific support request, resolve a security incident, or comply with a legal request — authorized team members may access specific data and only when necessary. For full details see our Privacy Policy.
+
+Q: Can I manage and showcase my projects?  
+A: Yes, easily even with the help of Portfolink AI.
 
 Q: Does Portfolink have AI support?  
 A: Yes! Portfolink includes AI-powered assistance to help you build, edit, and optimize your portfolio smartly and efficiently.

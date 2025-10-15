@@ -124,48 +124,70 @@ function Login() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-indigo-100 via-white to-blue-50 px-4 py-10 text-gray-900 font-inter">
+    <div className="relative min-h-screen overflow-hidden flex flex-col items-center justify-center bg-gradient-to-br from-[#0f172a] via-[#1e293b] to-[#0f172a] text-gray-200 font-inter">
+      {/* Floating Animated Background Elements */}
       <motion.div
-        initial={{ opacity: 0, y: 50 }}
+        className="absolute w-72 h-72 bg-indigo-500/30 rounded-full blur-3xl top-10 left-10"
+        animate={{ y: [0, 20, 0], opacity: [0.6, 1, 0.6] }}
+        transition={{ repeat: Infinity, duration: 6, ease: "easeInOut" }}
+      />
+      <motion.div
+        className="absolute w-72 h-72 bg-pink-500/30 rounded-full blur-3xl bottom-10 right-10"
+        animate={{ y: [0, -20, 0], opacity: [0.6, 1, 0.6] }}
+        transition={{ repeat: Infinity, duration: 6, ease: "easeInOut" }}
+      />
+
+      {/* Logo */}
+      <motion.img
+        src={logo}
+        alt="Portfolink Logo"
+        className="h-20 mb-6 z-10"
+        animate={{ y: [0, -10, 0] }}
+        transition={{ repeat: Infinity, duration: 4, ease: "easeInOut" }}
+      />
+
+      {/* Login Card */}
+      <motion.div
+        initial={{ opacity: 0, y: 40 }}
         animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.6, ease: "easeOut" }}
-        className="w-full max-w-md bg-white p-8 rounded-2xl shadow-xl border-2 border-indigo-100"
+        transition={{ duration: 0.6 }}
+        className="z-20 w-full max-w-md p-8 rounded-2xl bg-white/10 backdrop-blur-md shadow-2xl border border-white/20"
       >
-        <h2 className="text-3xl font-extrabold text-indigo-700 mb-6 text-center">
+        <h2 className="text-3xl font-bold text-center mb-6 bg-gradient-to-r from-indigo-400 to-pink-400 bg-clip-text text-transparent">
           Login to Portfolink
         </h2>
 
         <form onSubmit={handleSubmit} className="space-y-5">
           <div>
-            <label className="block text-sm font-medium mb-1">Email Address</label>
+            <label className="block text-sm mb-1">Email Address</label>
             <input
               type="email"
               name="email"
               value={formData.email}
               onChange={handleChange}
               placeholder="you@example.com"
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none"
+              className="w-full px-4 py-2 rounded-lg bg-white/20 border border-white/30 focus:ring-2 focus:ring-indigo-500 outline-none text-white placeholder-gray-400"
             />
-            {errors.email && <p className="text-xs text-red-500 mt-1">{errors.email}</p>}
+            {errors.email && <p className="text-xs text-red-400 mt-1">{errors.email}</p>}
           </div>
 
           <div className="relative">
-            <label className="block text-sm font-medium mb-1">Password</label>
+            <label className="block text-sm mb-1">Password</label>
             <input
               type={showPassword ? 'text' : 'password'}
               name="password"
               value={formData.password}
               onChange={handleChange}
               placeholder="********"
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none pr-10"
+              className="w-full px-4 py-2 rounded-lg bg-white/20 border border-white/30 focus:ring-2 focus:ring-indigo-500 outline-none text-white placeholder-gray-400 pr-10"
             />
             <span
-              className="absolute right-3 top-[36px] cursor-pointer text-gray-600"
+              className="absolute right-3 top-[36px] cursor-pointer text-gray-300"
               onClick={() => setShowPassword(prev => !prev)}
             >
               {showPassword ? <FaEyeSlash /> : <FaEye />}
             </span>
-            {errors.password && <p className="text-xs text-red-500 mt-1">{errors.password}</p>}
+            {errors.password && <p className="text-xs text-red-400 mt-1">{errors.password}</p>}
           </div>
 
           <div className="flex justify-between items-center text-sm">
@@ -174,18 +196,18 @@ function Login() {
                 type="checkbox"
                 checked={remember}
                 onChange={() => setRemember((prev) => !prev)}
-                className="accent-indigo-600"
+                className="accent-indigo-500"
               />
               Remember me
             </label>
-            <button type="button" onClick={handleForgotPassword} className="text-indigo-600 hover:underline">
+            <button type="button" onClick={handleForgotPassword} className="text-indigo-400 hover:underline">
               Forgot password?
             </button>
           </div>
 
           <button
             type="submit"
-            className="w-full bg-indigo-600 text-white py-2 rounded-lg font-semibold hover:bg-indigo-700 transition duration-300"
+            className="w-full bg-gradient-to-r from-indigo-600 to-pink-600 text-white py-2 rounded-lg font-semibold hover:scale-[1.02] transition duration-300"
             disabled={loading}
           >
             {loading ? 'Logging in...' : 'Login'}
@@ -193,20 +215,20 @@ function Login() {
         </form>
 
         <div className="flex items-center gap-4 my-6">
-          <hr className="flex-grow border-gray-300" />
-          <span className="text-sm text-gray-500">OR</span>
-          <hr className="flex-grow border-gray-300" />
+          <hr className="flex-grow border-gray-500/30" />
+          <span className="text-sm text-gray-400">OR</span>
+          <hr className="flex-grow border-gray-500/30" />
         </div>
 
         <div className="flex flex-col gap-3">
           <button
             type="button"
             onClick={() => handleProviderLogin('Google', googleProvider)}
-            className="flex items-center justify-center gap-2 border border-gray-300 py-2 rounded-lg hover:bg-gray-50 transition"
+            className="flex items-center justify-center gap-2 border border-gray-500/30 bg-white/10 py-2 rounded-lg hover:bg-white/20 transition"
           >
             {loadingProvider === 'Google' ? 'Signing in...' : (
               <>
-                <FaGoogle className="text-red-500" />
+                <FaGoogle className="text-red-400" />
                 Login with Google
               </>
             )}
@@ -214,32 +236,29 @@ function Login() {
           <button
             type="button"
             onClick={() => handleProviderLogin('GitHub', githubProvider)}
-            className="flex items-center justify-center gap-2 border border-gray-300 py-2 rounded-lg hover:bg-gray-50 transition"
+            className="flex items-center justify-center gap-2 border border-gray-500/30 bg-white/10 py-2 rounded-lg hover:bg-white/20 transition"
           >
             {loadingProvider === 'GitHub' ? 'Signing in...' : (
               <>
-                <FaGithub className="text-gray-800" />
+                <FaGithub className="text-gray-300" />
                 Login with GitHub
               </>
             )}
           </button>
         </div>
 
-        <p className="mt-6 text-center text-sm text-gray-600">
+        <p className="mt-6 text-center text-sm text-gray-400">
           Don’t have an account?{' '}
-          <Link to="/register" className="text-indigo-600 hover:underline font-medium">
+          <Link to="/register" className="text-indigo-400 hover:underline font-medium">
             Create One
           </Link>
         </p>
       </motion.div>
 
-      <motion.img
-        src={logo}
-        alt=""
-        className="hidden sm:block"
-        animate={{ y: [0, -30, 0] }}
-        transition={{ repeat: Infinity, duration: 4, ease: "easeInOut" }}
-      />
+      {/* Footer */}
+      <footer className="absolute bottom-4 text-xs text-gray-500">
+        © {new Date().getFullYear()} Portfolink. Crafted with ❤️ by Praisecrack.
+      </footer>
     </div>
   );
 }
