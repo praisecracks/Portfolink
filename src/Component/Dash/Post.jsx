@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { db, auth } from '../../firebase';
+import { db, auth, storage } from '../../firebase';
 import {
   collection,
   addDoc,
@@ -8,81 +8,143 @@ import {
   doc,
   query,
   where,
-  getDocs,
   serverTimestamp,
+  onSnapshot,
 } from 'firebase/firestore';
+import { ref, uploadBytesResumable, getDownloadURL } from 'firebase/storage';
+import { uploadImageToBackend } from '../../Component/uploadImageToBackend';
 import { toast } from 'react-toastify';
-import axios from 'axios';
 import Chat from './Chat';
+import { FaImage } from 'react-icons/fa';
+import { onAuthStateChanged } from 'firebase/auth';
 
 function PostManagement() {
-  const currentUser = auth.currentUser;
+  const [currentUser, setCurrentUser] = useState(null);
   const [posts, setPosts] = useState([]);
-  const [loadingPosts, setLoadingPosts] = useState(true);
-
+  const [loadingForm, setLoadingForm] = useState(false);
   const [title, setTitle] = useState('');
   const [content, setContent] = useState('');
-  const [imageURL, setImageURL] = useState('');
   const [imageFile, setImageFile] = useState(null);
-  const [loadingForm, setLoadingForm] = useState(false);
+  const [imagePreview, setImagePreview] = useState(null);
+  const [uploadProgress, setUploadProgress] = useState(0);
   const [editingPostId, setEditingPostId] = useState(null);
+  const [expandedPostId, setExpandedPostId] = useState(null);
 
+  // Track current user
+  useEffect(() => {
+    const unsubscribe = onAuthStateChanged(auth, user => setCurrentUser(user));
+    return () => unsubscribe();
+  }, []);
+
+  // Toggle: set to true to force using backend (Cloudinary) for uploads
+  const USE_BACKEND_UPLOAD = true; // <-- set true while debugging CORS issues
+
+  // Real-time posts sync
   useEffect(() => {
     if (!currentUser) return;
 
-    async function fetchPosts() {
-      setLoadingPosts(true);
-      try {
-        const q = query(collection(db, 'posts'), where('authorId', '==', currentUser.uid));
-        const querySnapshot = await getDocs(q);
-        const fetchedPosts = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-        fetchedPosts.sort((a, b) => b.createdAt?.seconds - a.createdAt?.seconds);
-        setPosts(fetchedPosts);
-      } catch (error) {
-        console.error('Error fetching posts:', error);
-        toast.error('Failed to load posts');
-      } finally {
-        setLoadingPosts(false);
-      }
-    }
+    const q = query(collection(db, 'posts'), where('authorId', '==', currentUser.uid));
+    const unsubscribe = onSnapshot(q, snapshot => {
+      const fetched = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+      fetched.sort((a, b) => b.createdAt?.seconds - a.createdAt?.seconds);
+      setPosts(fetched);
+    }, err => {
+      console.error(err);
+      toast.error('Failed to load posts');
+    });
 
-    fetchPosts();
+    return () => unsubscribe();
   }, [currentUser]);
 
-  function resetForm() {
+  const handleImageChange = (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      setImageFile(file);
+      setImagePreview(URL.createObjectURL(file));
+    }
+  };
+
+  const cancelImage = () => {
+    setImageFile(null);
+    setImagePreview(null);
+    setUploadProgress(0);
+  };
+
+  const resetForm = () => {
     setTitle('');
     setContent('');
-    setImageURL('');
     setImageFile(null);
+    setImagePreview(null);
     setEditingPostId(null);
-  }
+    setUploadProgress(0);
+  };
 
-  async function handleSubmit(e) {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-
-    if (!title.trim() || !content.trim()) {
-      toast.error('Title and content are required');
-      return;
-    }
+    if (!currentUser) return toast.error('You must be logged in to post.');
+    if (!title.trim() || !content.trim()) return toast.error('Title and content required');
 
     setLoadingForm(true);
+    let finalImageURL = null;
 
-    try {
-      let finalImageURL = imageURL.trim() || null;
+    if (imageFile) {
+      // Basic client-side size check (limit to 10MB)
+      const MAX_SIZE = 10 * 1024 * 1024;
+      if (imageFile.size > MAX_SIZE) {
+        toast.error('Image too large. Max size is 10MB.');
+        setLoadingForm(false);
+        return;
+      }
+      try {
+        const storageRef = ref(storage, `posts/${currentUser.uid}/${Date.now()}-${imageFile.name}`);
+        const uploadTask = uploadBytesResumable(storageRef, imageFile);
+        // Race the upload against a timeout so UI doesn't hang forever
+        await new Promise((resolve, reject) => {
+          const timeoutMs = 30000; // 30s
+          const timeout = setTimeout(() => {
+            try { uploadTask.cancel && uploadTask.cancel(); } catch (e) {}
+            reject(new Error('Upload timeout'));
+          }, timeoutMs);
 
-      if (imageFile) {
-        const formData = new FormData();
-        formData.append('image', imageFile);
-
+          uploadTask.on(
+            'state_changed',
+            snapshot => setUploadProgress(Math.round((snapshot.bytesTransferred / snapshot.totalBytes) * 100)),
+            err => {
+              clearTimeout(timeout);
+              reject(err);
+            },
+            async () => {
+              clearTimeout(timeout);
+              try {
+                finalImageURL = await getDownloadURL(uploadTask.snapshot.ref);
+                resolve();
+              } catch (e) {
+                reject(e);
+              }
+            }
+          );
+        });
+      } catch (err) {
+        console.error('Firebase upload failed:', err);
+        // Try fallback to backend upload (Cloudinary)
+        toast.info('Primary upload failed, trying fallback...');
         try {
-          const res = await axios.post('http://localhost:5000/upload', formData);
-          finalImageURL = res.data.imageUrl;
-        } catch (uploadErr) {
-          console.error("Image upload failed:", uploadErr);
-          toast.error("Failed to upload image");
+          const fallbackUrl = await uploadImageToBackend(imageFile);
+          if (fallbackUrl) {
+            finalImageURL = fallbackUrl;
+          } else {
+            throw new Error('Fallback upload did not return a URL');
+          }
+        } catch (fbErr) {
+          console.error('Fallback upload failed:', fbErr);
+          toast.error('Image upload failed. Please try again.');
+          setLoadingForm(false);
+          return;
         }
       }
+    }
 
+    try {
       if (editingPostId) {
         const postRef = doc(db, 'posts', editingPostId);
         await updateDoc(postRef, {
@@ -91,163 +153,157 @@ function PostManagement() {
           imageURL: finalImageURL,
           updatedAt: serverTimestamp(),
         });
-
-        toast.success('Post updated successfully');
-        setPosts(prev =>
-          prev.map(post =>
-            post.id === editingPostId ? { ...post, title, content, imageURL: finalImageURL } : post
-          )
-        );
+        toast.success('Post updated');
       } else {
-        const docRef = await addDoc(collection(db, 'posts'), {
+        await addDoc(collection(db, 'posts'), {
           title: title.trim(),
           content: content.trim(),
           imageURL: finalImageURL,
           createdAt: serverTimestamp(),
           authorId: currentUser.uid,
-          authorName: currentUser.displayName || null,
+          authorName: currentUser.displayName || 'Anonymous',
         });
-
-        toast.success('Post created successfully');
-        setPosts(prev => [{ id: docRef.id, title, content, imageURL: finalImageURL, authorId: currentUser.uid }, ...prev]);
+        toast.success('Post created');
       }
 
       resetForm();
-    } catch (error) {
-      console.error('Error saving post:', error);
+    } catch (err) {
+      console.error(err);
       toast.error('Failed to save post');
     } finally {
       setLoadingForm(false);
     }
-  }
+  };
 
-  async function handleDelete(postId) {
-    if (!window.confirm('Are you sure you want to delete this post?')) return;
-
+  const handleDelete = async (postId) => {
+    if (!window.confirm('Are you sure?')) return;
     try {
       await deleteDoc(doc(db, 'posts', postId));
       toast.success('Post deleted');
-      setPosts(prev => prev.filter(post => post.id !== postId));
       if (editingPostId === postId) resetForm();
-    } catch (error) {
-      console.error('Error deleting post:', error);
+    } catch (err) {
+      console.error(err);
       toast.error('Failed to delete post');
     }
-  }
+  };
 
-  function startEdit(post) {
+  const startEdit = (post) => {
     setTitle(post.title);
     setContent(post.content);
-    setImageURL(post.imageURL || '');
+    setImagePreview(post.imageURL || null);
     setImageFile(null);
     setEditingPostId(post.id);
-  }
+  };
 
-  function cancelEdit() {
-    resetForm();
-  }
+  const cancelEdit = () => resetForm();
 
   return (
-    <div className="max-w-4xl mx-auto p-6 rounded bg-white dark:bg-gray-900 text-gray-800 dark:text-gray-100">
-      <h2 className="text-3xl font-semibold mb-6 text-indigo-700 dark:text-indigo-400">
-        {editingPostId ? 'Edit Post' : 'Create New Post'}
-      </h2>
-
-      <form onSubmit={handleSubmit} className="space-y-6 mb-10">
-        <div>
-          <label htmlFor="title" className="block font-medium mb-1 text-gray-700 dark:text-gray-200">Title *</label>
+    <div className="max-w-6xl mx-auto p-6 space-y-8">
+      {/* Form */}
+      <div className="bg-white dark:bg-gray-900 rounded-lg shadow-lg p-6">
+        <h2 className="text-3xl font-bold mb-6 text-indigo-600 dark:text-indigo-400">
+          {editingPostId ? 'Edit Post' : 'Create New Post'}
+        </h2>
+        <form onSubmit={handleSubmit} className="space-y-5">
           <input
-            id="title"
             type="text"
             placeholder="Post title..."
-            className="w-full px-4 py-2 rounded border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-800 dark:text-gray-100"
             value={title}
             onChange={(e) => setTitle(e.target.value)}
+            className="w-full px-4 py-3 rounded border border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-800 text-gray-800 dark:text-gray-100 focus:ring-2 focus:ring-indigo-400 transition"
             required
           />
-        </div>
-
-        <div>
-          <label htmlFor="content" className="block font-medium mb-1 text-gray-700 dark:text-gray-200">Content *</label>
           <textarea
-            id="content"
-            rows="6"
-            placeholder="Write announcement or blog post here..."
-            className="w-full px-4 py-2 rounded border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-800 dark:text-gray-100"
+            rows="4"
+            placeholder="Write your post..."
             value={content}
             onChange={(e) => setContent(e.target.value)}
+            className="w-full px-4 py-3 rounded border border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-800 text-gray-800 dark:text-gray-100 focus:ring-2 focus:ring-indigo-400 transition"
             required
           />
-        </div>
-
-        <div>
-          <label htmlFor="imageUpload" className="block font-medium mb-1 text-gray-700 dark:text-gray-200">Upload Image (optional)</label>
-          <input
-            id="imageUpload"
-            type="file"
-            accept="image/*"
-            onChange={(e) => setImageFile(e.target.files[0])}
-            className="w-full px-4 py-2 rounded border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-800 dark:text-gray-100"
-          />
-        </div>
-
-        <div className="flex gap-4 items-center">
-          <button
-            type="submit"
-            disabled={loadingForm}
-            className={`py-3 px-6 rounded bg-indigo-600 text-white hover:bg-indigo-700 transition ${loadingForm ? 'opacity-50 cursor-not-allowed' : ''}`}
-          >
-            {loadingForm ? (editingPostId ? 'Updating...' : 'Posting...') : editingPostId ? 'Update Post' : 'Post Announcement'}
-          </button>
-
-          {editingPostId && (
-            <button
-              type="button"
-              onClick={cancelEdit}
-              className="py-3 px-6 rounded bg-gray-300 dark:bg-gray-700 text-gray-700 dark:text-white hover:bg-gray-400 dark:hover:bg-gray-600"
-            >
-              Cancel
+          <div className="flex items-center gap-3">
+            <label className="flex items-center gap-2 cursor-pointer text-indigo-600 hover:text-indigo-800">
+              <FaImage /> {imageFile ? 'Change Image' : 'Upload Image'}
+              <input type="file" accept="image/*" onChange={handleImageChange} className="hidden" />
+            </label>
+            {imagePreview && (
+              <div className="relative">
+                <img src={imagePreview} alt="Preview" className="max-h-32 rounded shadow-md" />
+                <button onClick={cancelImage} className="absolute top-1 right-1 bg-red-600 text-white rounded px-2 py-1 hover:bg-red-700">
+                  ✕
+                </button>
+                {uploadProgress > 0 && uploadProgress < 100 && (
+                  <div className="mt-1 text-sm text-indigo-600">Uploading: {uploadProgress}%</div>
+                )}
+              </div>
+            )}
+          </div>
+          <div className="flex gap-3">
+            <button type="submit" disabled={loadingForm} className={`px-6 py-3 bg-indigo-600 text-white rounded hover:bg-indigo-700 transition ${loadingForm ? 'opacity-50 cursor-not-allowed' : ''}`}>
+              {loadingForm ? (editingPostId ? 'Updating...' : 'Posting...') : editingPostId ? 'Update Post' : 'Post'}
             </button>
-          )}
-        </div>
-      </form>
+            {editingPostId && (
+              <button type="button" onClick={cancelEdit} className="px-6 py-3 bg-gray-300 dark:bg-gray-700 rounded hover:bg-gray-400 dark:hover:bg-gray-600 transition">
+                Cancel
+              </button>
+            )}
+          </div>
+        </form>
+      </div>
 
-      <h3 className="text-2xl font-semibold mb-4 text-indigo-700 dark:text-indigo-400">Your Posts</h3>
+      {/* Posts List */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        {posts.length === 0 ? (
+          <p className="text-gray-500 dark:text-gray-400">No posts found. Create your first post above.</p>
+        ) : (
+          posts.map(post => {
+            const isExpanded = expandedPostId === post.id;
+            return (
+              <div
+                key={post.id}
+                className="bg-white dark:bg-gray-800 rounded-lg shadow-md hover:shadow-xl transition cursor-pointer overflow-hidden"
+                onClick={() => setExpandedPostId(isExpanded ? null : post.id)}
+              >
+                <div className="p-4">
+                  <div className="flex justify-between items-start mb-2">
+                    <h3 className="text-lg font-semibold text-indigo-600 dark:text-indigo-300">{post.title}</h3>
+                    <div className="flex gap-2">
+                      <button onClick={(e) => { e.stopPropagation(); startEdit(post); }} className="px-3 py-1 bg-indigo-600 text-white rounded hover:bg-indigo-700 transition">Edit</button>
+                      <button onClick={(e) => { e.stopPropagation(); handleDelete(post.id); }} className="px-3 py-1 bg-red-600 text-white rounded hover:bg-red-700 transition">Delete</button>
+                    </div>
+                  </div>
 
-      {loadingPosts ? (
-        <p className="text-gray-500 dark:text-gray-400">Loading posts...</p>
-      ) : posts.length === 0 ? (
-        <p className="text-gray-500 dark:text-gray-400">No posts found. Create your first announcement above.</p>
-      ) : (
-        <ul className="space-y-4">
-          {posts.map(post => (
-            <li key={post.id} className="p-4 bg-blue-900 dark:bg-gray-800 rounded-md flex justify-between items-start flex-col sm:flex-row">
-              <div className="mb-4 sm:mb-0 sm:mr-4">
-                <h4 className="text-lg font-semibold text-white">{post.title}</h4>
-                <p className="text-sm text-gray-300 dark:text-gray-400 line-clamp-2">{post.content}</p>
-                <small className="text-xs text-gray-300 dark:text-gray-500 block mt-2">
-                  {post.createdAt?.toDate ? post.createdAt.toDate().toLocaleString() : 'Just now'}
-                </small>
-                <small className="text-green-500">status: posted</small>
+                  <small className="text-gray-500 dark:text-gray-400">{post.createdAt?.toDate?.().toLocaleString() || 'Just now'}</small>
+
+                  {/* Thumbnail / Placeholder */}
+                  <div className="mt-3">
+                    {post.imageURL ? (
+                      <div className="w-full h-40 rounded overflow-hidden shadow-sm">
+                        <img src={post.imageURL} alt="Post thumbnail" className="w-full h-full object-cover" />
+                      </div>
+                    ) : (
+                      <div className="w-full h-40 rounded border-2 border-dashed border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 flex items-center justify-center text-gray-500 dark:text-gray-400">
+                        <div className="text-center">
+                          <FaImage className="mx-auto text-2xl mb-2 text-indigo-400" />
+                          <div className="text-sm">No image added</div>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+
+                  {isExpanded && (
+                    <div className="mt-3 space-y-2 text-gray-800 dark:text-gray-200">
+                      <p>{post.content}</p>
+                      {post.imageURL && <img src={post.imageURL} alt="Post" className="max-h-48 rounded shadow-md mt-2 w-full object-cover" />}
+                    </div>
+                  )}
+                </div>
               </div>
-              <div className="flex gap-2">
-                <button
-                  onClick={() => startEdit(post)}
-                  className="px-3 py-1 bg-indigo-600 text-white rounded hover:bg-indigo-700 transition"
-                >
-                  Edit
-                </button>
-                <button
-                  onClick={() => handleDelete(post.id)}
-                  className="px-3 py-1 bg-red-600 text-white rounded hover:bg-red-700 transition"
-                >
-                  Delete
-                </button>
-              </div>
-            </li>
-          ))}
-        </ul>
-      )}
+            );
+          })
+        )}
+      </div>
+
       <Chat />
     </div>
   );

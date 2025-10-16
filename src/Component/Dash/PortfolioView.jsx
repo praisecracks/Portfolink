@@ -33,6 +33,9 @@ import {
 } from 'react-icons/si';
 
 import { toast } from 'react-toastify';
+import ProjectCard from './ProjectCard';
+import ProjectLightbox from './ProjectLightbox';
+import { motion } from 'framer-motion';
 
 const skillIcons = {
   JavaScript: <FaJs className="text-yellow-400" />,
@@ -69,6 +72,8 @@ function PortfolioView() {
   const [profile, setProfile] = useState(null);
   const [projects, setProjects] = useState([]);
   const [selectedProject, setSelectedProject] = useState(null);
+  const [search, setSearch] = useState('');
+  const [selectedTags, setSelectedTags] = useState(new Set());
   const [loading, setLoading] = useState(true);
   const [darkMode, setDarkMode] = useState(() => localStorage.getItem('darkMode') === 'true');
   const [navOpen, setNavOpen] = useState(false);
@@ -118,6 +123,33 @@ function PortfolioView() {
 
     fetchPortfolio();
   }, [uid]);
+
+  // Derived tag list
+  const allTags = React.useMemo(() => {
+    const tags = new Set();
+    projects.forEach(p => (p.tags || []).forEach(t => tags.add(t)));
+    return Array.from(tags);
+  }, [projects]);
+
+  const toggleTag = (tag) => {
+    setSelectedTags(prev => {
+      const next = new Set(prev);
+      if (next.has(tag)) next.delete(tag); else next.add(tag);
+      return next;
+    });
+  };
+
+  const filteredProjects = React.useMemo(() => {
+    const q = search.trim().toLowerCase();
+    return projects.filter(p => {
+      if (selectedTags.size > 0) {
+        const has = (p.tags || []).some(t => selectedTags.has(t));
+        if (!has) return false;
+      }
+      if (!q) return true;
+      return (p.title || '').toLowerCase().includes(q) || (p.description || '').toLowerCase().includes(q) || (p.tags || []).join(' ').toLowerCase().includes(q);
+    });
+  }, [projects, search, selectedTags]);
 
   // Handle contact form input changes
   const handleContactChange = (e) => {
@@ -286,64 +318,34 @@ function PortfolioView() {
           <p className="text-center text-gray-600 dark:text-gray-300 mb-6">
             Some of my recent work showcasing problem-solving and creativity.
           </p>
-          {projects.length === 0 ? (
-            <p className="text-center text-gray-400 dark:text-gray-500">No projects found.</p>
-          ) : (
-            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">
-              {projects.map(project => (
-                <div
-                  key={project.id}
-                  onClick={() => setSelectedProject(project)}
-                  className="cursor-pointer bg-white dark:bg-gray-800 rounded-lg p-4 shadow hover:shadow-lg transition"
-                >
-                  {project.imageURL ? (
-                    <img src={project.imageURL} alt={project.title} className="h-40 w-full object-cover rounded mb-3" />
-                  ) : (
-                    <div className="h-40 flex items-center justify-center bg-gray-100 dark:bg-gray-700 rounded mb-3">
-                      <FaProjectDiagram className="text-3xl text-gray-500" />
-                    </div>
-                  )}
-                  <h3 className="text-lg font-semibold text-indigo-700 dark:text-indigo-300">{project.title}</h3>
-                  <p className="text-sm text-gray-600 dark:text-gray-300 mt-1">{project.description?.slice(0, 80) || "No description"}</p>
-                </div>
+
+          <div className="max-w-2xl mx-auto mb-6 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+            <div className="flex items-center gap-2">
+              <input type="text" placeholder="Search projects..." className="px-3 py-2 rounded-md border focus:ring-2 focus:ring-indigo-500" onChange={(e) => setSearch(e.target.value)} />
+            </div>
+            <div className="flex items-center gap-2 flex-wrap">
+              {allTags.map((t) => (
+                <button key={t} onClick={() => toggleTag(t)} className={`px-3 py-1 rounded-full text-sm ${selectedTags.has(t) ? 'bg-indigo-600 text-white' : 'bg-indigo-100 text-indigo-700'}`}>
+                  {t}
+                </button>
               ))}
             </div>
+          </div>
+
+          {filteredProjects.length === 0 ? (
+            <p className="text-center text-gray-400 dark:text-gray-500">No projects found.</p>
+          ) : (
+            <motion.div layout className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">
+              {filteredProjects.map(project => (
+                <ProjectCard key={project.id} project={project} onOpen={(p) => setSelectedProject(p)} />
+              ))}
+            </motion.div>
           )}
         </section>
 
         {/* MODAL FOR SELECTED PROJECT */}
         {selectedProject && (
-          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 px-4" onClick={() => setSelectedProject(null)}>
-            <div className="bg-white dark:bg-gray-900 max-w-xl w-full p-6 rounded-lg relative shadow-lg" onClick={e => e.stopPropagation()}>
-              <button className="absolute top-4 right-4 text-xl text-gray-500 hover:text-red-500" onClick={() => setSelectedProject(null)}>
-                <FaTimes />
-              </button>
-              <h3 className="text-xl font-bold mb-2 text-indigo-700 dark:text-indigo-300">{selectedProject.title}</h3>
-              {selectedProject.imageURL && (
-                <img src={selectedProject.imageURL} alt={selectedProject.title} className="w-full h-60 object-cover rounded mb-3" />
-              )}
-              <p className="text-sm text-gray-700 dark:text-gray-300 mb-2 whitespace-pre-line">{selectedProject.description}</p>
-              {selectedProject.tags?.length > 0 && (
-                <div className="flex flex-wrap gap-2 mb-2">
-                  {selectedProject.tags.map((tag, idx) => (
-                    <span key={idx} className="px-2 py-1 text-xs bg-indigo-100 dark:bg-indigo-800 text-indigo-800 dark:text-white rounded-full">
-                      {tag}
-                    </span>
-                  ))}
-                </div>
-              )}
-              {selectedProject.github && (
-                <a href={selectedProject.github} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline text-sm block mb-1">
-                  GitHub Link
-                </a>
-              )}
-              {selectedProject.liveURL && (
-                <a href={selectedProject.liveURL} target="_blank" rel="noopener noreferrer" className="text-green-600 hover:underline text-sm block">
-                  Live Demo
-                </a>
-              )}
-            </div>
-          </div>
+          <ProjectLightbox project={selectedProject} onClose={() => setSelectedProject(null)} />
         )}
 
         {/* EDUCATION SECTION */}

@@ -180,21 +180,7 @@ function Home() {
             className="w-full max-w-md rounded-xl shadow-2xl border-2 border-indigo-400 transition-all"
           />
           {/* Floating Icons */}
-          {floatingIcons.map((icon, idx) => (
-            <motion.div
-              key={idx}
-              className="absolute text-2xl"
-              initial={{ opacity: 0.5, y: -20, x: 0 }}
-              animate={{ y: [0, 10, 0], x: [0, 5, -5, 0] }}
-              transition={{ duration: 4 + idx, repeat: Infinity, ease: 'easeInOut' }}
-              style={{
-                top: `${Math.random() * 60}%`,
-                left: `${Math.random() * 80}%`,
-              }}
-            >
-              {icon}
-            </motion.div>
-          ))}
+
         </motion.div>
       </section>
 

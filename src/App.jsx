@@ -20,8 +20,8 @@ import Post from "./Component/Dash/Post.jsx";
 import Messages from "./Component/Dash/Message.jsx";
 import Chat from "./Component/Dash/Chat.jsx";
 import ResumeGenerator from "./Component/Dash/ResumeGenerator.jsx";
+import Marketplace from "./Component/Dash/Marketplace.jsx";
 import NotFound from "./Component/NotFound.jsx";
-
 import 'react-toastify/dist/ReactToastify.css';
 import BlogPage from "./Component/Blog/BlogPage.jsx";
 
@@ -49,6 +49,7 @@ function App() {
             <Route index element={<Dashboard />} />
             <Route path="profile" element={<Profile />} />
             <Route path="projects" element={<Projects />} />
+            <Route path="marketplace" element={<Marketplace />} />
             <Route path="portfolio" element={<Portfolio />} />
             <Route path="portfolio/resume" element={<ResumeGenerator />} />
             <Route path="about" element={<About />} />
