@@ -69,8 +69,9 @@ function Login() {
   toast.push("Welcome back!", { type: 'info' });
       navigate('/dashboard');
     } catch (error) {
-  toast.push("Login failed. Please check your credentials.", { type: 'error' });
-      console.error(error);
+      const codeMsg = error?.code ? `${error.code}` : error?.message || 'Unknown error';
+  toast.push(`Login failed: ${codeMsg}`, { type: 'error' });
+      console.error('Login error:', error);
     } finally {
       setLoading(false);
     }
@@ -105,8 +106,9 @@ function Login() {
           toast.push("This email is already registered with a different provider.", { type: 'error' });
         }
       } else {
-        console.error(err);
-  toast.push(`${providerName} sign-in failed`, { type: 'error' });
+        const codeMsg = err?.code ? `${err.code}` : err?.message || 'Unknown error';
+        console.error('Provider sign-in error:', err);
+  toast.push(`${providerName} sign-in failed: ${codeMsg}`, { type: 'error' });
       }
     } finally {
       setLoadingProvider(null);

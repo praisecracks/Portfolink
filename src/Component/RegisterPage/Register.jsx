@@ -63,8 +63,9 @@ function Register() {
       toast.push('Account created successfully ✅', { type: 'info' });
       navigate('/login');
     } catch (err) {
-      toast.push('Error creating account', { type: 'error' });
-      console.error(err);
+        const codeMsg = err?.code ? `${err.code}` : err?.message || 'Unknown error';
+        toast.push(`Error creating account: ${codeMsg}`, { type: 'error' });
+        console.error('Register error:', err);
     }
   };
 
@@ -97,8 +98,9 @@ function Register() {
           toast.push('This email is already registered with another provider.', { type: 'error' });
         }
       } else {
-        console.error(err);
-  toast.push(`${providerName} sign-in failed`, { type: 'error' });
+        const codeMsg = err?.code ? `${err.code}` : err?.message || 'Unknown error';
+        console.error('Provider sign-in error:', err);
+        toast.push(`${providerName} sign-in failed: ${codeMsg}`, { type: 'error' });
       }
     } finally {
       setLoadingProvider(null);
