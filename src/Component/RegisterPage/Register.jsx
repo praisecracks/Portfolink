@@ -9,11 +9,12 @@ import {
   fetchSignInMethodsForEmail,
 } from 'firebase/auth';
 import { doc, setDoc } from 'firebase/firestore';
-import { toast } from 'react-toastify';
+import { useToast } from '../UI/ToastContext';
 import registerart from '../../assets/img.png';
-import logo from "../../assets/portlogo.png"
+import logo from "../../assets/portLogo.png"
 
 function Register() {
+  const toast = useToast();
   const [formData, setFormData] = useState({
     name: '',
     email: '',
@@ -59,10 +60,10 @@ function Register() {
         provider: 'email/password',
         createdAt: new Date(),
       });
-      toast.success('Account created successfully ✅');
+      toast.push('Account created successfully ✅', { type: 'info' });
       navigate('/login');
     } catch (err) {
-      toast.error('Error creating account');
+      toast.push('Error creating account', { type: 'error' });
       console.error(err);
     }
   };
@@ -82,26 +83,22 @@ function Register() {
         createdAt: new Date(),
       });
 
-      toast.success(`Signed in with ${providerName}`);
+  toast.push(`Signed in with ${providerName}`, { type: 'info' });
       navigate('/dashboard');
     } catch (err) {
       if (err.code === 'auth/account-exists-with-different-credential') {
         const email = err.customData?.email;
         const methods = await fetchSignInMethodsForEmail(auth, email);
         if (methods.includes('password')) {
-          toast.error(
-            'This email is already registered. Try logging in with email/password.'
-          );
+          toast.push('This email is already registered. Try logging in with email/password.', { type: 'error' });
         } else if (methods.includes('google.com')) {
-          toast.error(
-            'This email is already registered with Google. Try signing in with Google.'
-          );
+          toast.push('This email is already registered with Google. Try signing in with Google.', { type: 'error' });
         } else {
-          toast.error('This email is already registered with another provider.');
+          toast.push('This email is already registered with another provider.', { type: 'error' });
         }
       } else {
         console.error(err);
-        toast.error(`${providerName} sign-in failed`);
+  toast.push(`${providerName} sign-in failed`, { type: 'error' });
       }
     } finally {
       setLoadingProvider(null);

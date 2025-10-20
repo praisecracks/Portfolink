@@ -32,7 +32,7 @@ import {
   SiC, SiCplusplus, SiRust, SiPhp, SiMysql, SiPostgresql
 } from 'react-icons/si';
 
-import { toast } from 'react-toastify';
+import { useToast } from '../UI/ToastContext';
 import ProjectCard from './ProjectCard';
 import ProjectLightbox from './ProjectLightbox';
 import { motion } from 'framer-motion';
@@ -75,6 +75,7 @@ function PortfolioView() {
   const [search, setSearch] = useState('');
   const [selectedTags, setSelectedTags] = useState(new Set());
   const [loading, setLoading] = useState(true);
+  const toast = useToast();
   const [darkMode, setDarkMode] = useState(() => localStorage.getItem('darkMode') === 'true');
   const [navOpen, setNavOpen] = useState(false);
   const [contactForm, setContactForm] = useState({ name: '', email: '', message: '' });
@@ -168,11 +169,11 @@ function PortfolioView() {
         ...contactForm,
         timestamp: new Date().toISOString(),
       });
-      toast.success('Message sent successfully!');
+      toast.push('Message sent successfully!', { type: 'info' });
       setContactForm({ name: '', email: '', message: '' });
     } catch (err) {
       console.error('Failed to send message:', err);
-      toast.error('Failed to send message!');
+      toast.push('Failed to send message!', { type: 'error' });
     }
   };
 

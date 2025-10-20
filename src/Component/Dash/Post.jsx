@@ -13,7 +13,7 @@ import {
 } from 'firebase/firestore';
 import { ref, uploadBytesResumable, getDownloadURL } from 'firebase/storage';
 import { uploadImageToBackend } from '../../Component/uploadImageToBackend';
-import { toast } from 'react-toastify';
+import { useToast } from '../UI/ToastContext';
 import Chat from './Chat';
 import { FaImage } from 'react-icons/fa';
 import { onAuthStateChanged } from 'firebase/auth';
@@ -36,6 +36,8 @@ function PostManagement() {
     return () => unsubscribe();
   }, []);
 
+  const toast = useToast();
+
   // Toggle: set to true to force using backend (Cloudinary) for uploads
   const USE_BACKEND_UPLOAD = true; // <-- set true while debugging CORS issues
 
@@ -48,9 +50,9 @@ function PostManagement() {
       const fetched = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
       fetched.sort((a, b) => b.createdAt?.seconds - a.createdAt?.seconds);
       setPosts(fetched);
-    }, err => {
+      }, err => {
       console.error(err);
-      toast.error('Failed to load posts');
+      toast.push('Failed to load posts', { type: 'error' });
     });
 
     return () => unsubscribe();
@@ -81,8 +83,8 @@ function PostManagement() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!currentUser) return toast.error('You must be logged in to post.');
-    if (!title.trim() || !content.trim()) return toast.error('Title and content required');
+  if (!currentUser) return toast.push('You must be logged in to post.', { type: 'error' });
+  if (!title.trim() || !content.trim()) return toast.push('Title and content required', { type: 'error' });
 
     setLoadingForm(true);
     let finalImageURL = null;
@@ -127,7 +129,7 @@ function PostManagement() {
       } catch (err) {
         console.error('Firebase upload failed:', err);
         // Try fallback to backend upload (Cloudinary)
-        toast.info('Primary upload failed, trying fallback...');
+  toast.push('Primary upload failed, trying fallback...', { type: 'info' });
         try {
           const fallbackUrl = await uploadImageToBackend(imageFile);
           if (fallbackUrl) {
@@ -137,7 +139,7 @@ function PostManagement() {
           }
         } catch (fbErr) {
           console.error('Fallback upload failed:', fbErr);
-          toast.error('Image upload failed. Please try again.');
+            toast.push('Image upload failed. Please try again.', { type: 'error' });
           setLoadingForm(false);
           return;
         }
@@ -153,7 +155,7 @@ function PostManagement() {
           imageURL: finalImageURL,
           updatedAt: serverTimestamp(),
         });
-        toast.success('Post updated');
+  toast.push('Post updated', { type: 'info' });
       } else {
         await addDoc(collection(db, 'posts'), {
           title: title.trim(),
@@ -163,13 +165,13 @@ function PostManagement() {
           authorId: currentUser.uid,
           authorName: currentUser.displayName || 'Anonymous',
         });
-        toast.success('Post created');
+  toast.push('Post created', { type: 'info' });
       }
 
       resetForm();
     } catch (err) {
       console.error(err);
-      toast.error('Failed to save post');
+  toast.push('Failed to save post', { type: 'error' });
     } finally {
       setLoadingForm(false);
     }
@@ -179,11 +181,11 @@ function PostManagement() {
     if (!window.confirm('Are you sure?')) return;
     try {
       await deleteDoc(doc(db, 'posts', postId));
-      toast.success('Post deleted');
+  toast.push('Post deleted', { type: 'info' });
       if (editingPostId === postId) resetForm();
     } catch (err) {
       console.error(err);
-      toast.error('Failed to delete post');
+  toast.push('Failed to delete post', { type: 'error' });
     }
   };
 

@@ -3,17 +3,18 @@ import { Link, useLocation, useNavigate } from 'react-router-dom';
 import logo from "../../assets/portLogo.png";
 import {
   FaHome, FaUser, FaSignOutAlt, FaProjectDiagram, FaIdBadge,
-  FaMoon, FaSun, FaTimes, FaEdit, FaInfoCircle, FaEnvelope, FaShoppingCart
+  FaMoon, FaSun, FaTimes, FaEdit, FaInfoCircle, FaEnvelope, FaShoppingCart, FaTools
 } from 'react-icons/fa';
 import { signOut } from 'firebase/auth';
 import { auth, db } from '../../firebase';
-import { toast } from 'react-toastify';
+import { useToast } from '../UI/ToastContext';
 import { collection, getDoc, doc, onSnapshot, query } from 'firebase/firestore';
 
 function Sidebar({ sidebarOpen, setSidebarOpen }) {
   const navigate = useNavigate();
   const location = useLocation();
   const currentUser = auth.currentUser;
+  const toast = useToast();
 
   const [isAdmin, setIsAdmin] = useState(false);
   const [isDarkMode, setIsDarkMode] = useState(false);
@@ -101,10 +102,10 @@ function Sidebar({ sidebarOpen, setSidebarOpen }) {
   const handleLogout = async () => {
     try {
       await signOut(auth);
-      toast.success('Logged out successfully!');
+      toast.push('Logged out successfully!', { type: 'info' });
       navigate('/login');
     } catch (err) {
-      toast.error('Logout failed!');
+      toast.push('Logout failed!', { type: 'error' });
       console.error(err);
     }
   };
@@ -206,6 +207,7 @@ function Sidebar({ sidebarOpen, setSidebarOpen }) {
           {currentUser && isAdmin && <Link to="/dashboard/post" onClick={handleLinkClick} className={`${baseClasses} ${isActive("/dashboard/post") ? active : inactive}`}><FaEdit /> Add Post</Link>}
 
           <Link to="/dashboard/about" onClick={handleLinkClick} className={`${baseClasses} ${isActive("/dashboard/about") ? active : inactive}`}><FaInfoCircle /> About Web</Link>
+          <Link to="/dashboard/settings" onClick={handleLinkClick} className={`${baseClasses} ${isActive("/dashboard/settings") ? active : inactive}`}><FaTools /> Settings</Link>
 
           <button onClick={handleLogout} className="flex items-center w-full text-left text-red-600 dark:text-red-400 hover:bg-red-100 dark:hover:bg-red-700 py-2.5 px-4 rounded-md">
             <FaSignOutAlt className="mr-2" /> Logout

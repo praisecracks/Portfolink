@@ -9,12 +9,13 @@ import {
 } from 'firebase/auth';
 import { auth, googleProvider, githubProvider, db } from '../../firebase';
 import { doc, setDoc } from 'firebase/firestore';
-import { toast } from 'react-toastify';
+import { useToast } from '../UI/ToastContext';
 import { motion } from 'framer-motion';
 import logo from "../../assets/portLogo.png";
-import 'react-toastify/dist/ReactToastify.css';
+// react-toastify removed - using app ToastContext
 
 function Login() {
+  const toast = useToast();
   const navigate = useNavigate();
   const [formData, setFormData] = useState({ email: '', password: '' });
   const [errors, setErrors] = useState({});
@@ -65,10 +66,10 @@ function Login() {
         lastLogin: new Date(),
       }, { merge: true });
 
-      toast.success("Welcome back!");
+  toast.push("Welcome back!", { type: 'info' });
       navigate('/dashboard');
     } catch (error) {
-      toast.error("Login failed. Please check your credentials.");
+  toast.push("Login failed. Please check your credentials.", { type: 'error' });
       console.error(error);
     } finally {
       setLoading(false);
@@ -90,22 +91,22 @@ function Login() {
         lastLogin: new Date(),
       }, { merge: true });
 
-      toast.success(`Signed in with ${providerName}`);
+  toast.push(`Signed in with ${providerName}`, { type: 'info' });
       navigate('/dashboard');
     } catch (err) {
       if (err.code === 'auth/account-exists-with-different-credential') {
         const email = err.customData?.email;
         const methods = await fetchSignInMethodsForEmail(auth, email);
         if (methods.includes('google.com')) {
-          toast.error("This email is already registered with Google. Try signing in with Google.");
+          toast.push("This email is already registered with Google. Try signing in with Google.", { type: 'error' });
         } else if (methods.includes('password')) {
-          toast.error("This email is already registered with email/password.");
+          toast.push("This email is already registered with email/password.", { type: 'error' });
         } else {
-          toast.error("This email is already registered with a different provider.");
+          toast.push("This email is already registered with a different provider.", { type: 'error' });
         }
       } else {
         console.error(err);
-        toast.error(`${providerName} sign-in failed`);
+  toast.push(`${providerName} sign-in failed`, { type: 'error' });
       }
     } finally {
       setLoadingProvider(null);
@@ -113,12 +114,12 @@ function Login() {
   };
 
   const handleForgotPassword = async () => {
-    if (!formData.email) return toast.warning("Enter your email to reset password.");
+  if (!formData.email) return toast.push("Enter your email to reset password.", { type: 'error' });
     try {
       await sendPasswordResetEmail(auth, formData.email);
-      toast.success("Password reset email sent!");
+  toast.push("Password reset email sent!", { type: 'info' });
     } catch (error) {
-      toast.error("Failed to send reset email.");
+  toast.push("Failed to send reset email.", { type: 'error' });
       console.error(error);
     }
   };

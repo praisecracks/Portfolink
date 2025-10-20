@@ -11,6 +11,11 @@ html.dark body {
   @apply bg-gray-900 text-white transition-colors duration-300;
 }
 
+/* Smooth theme transition helper */
+.theme-transition, .theme-transition * {
+  transition: background-color 250ms ease, color 250ms ease, border-color 250ms ease, box-shadow 250ms ease;
+}
+
 .sidebar-hide-scroll::-webkit-scrollbar {
   display: none;
 }

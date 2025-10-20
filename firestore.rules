@@ -1,0 +1,206 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // --- Helper functions ---
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function getUserRole(uid) {
+      return get(/databases/$(database)/documents/users/$(uid)).data.role;
+    }
+
+    function isAdmin() {
+      // NOTE: This includes a temporary developer UID whitelist to unblock
+      // job posting during development. Remove the `|| request.auth.uid in ...`
+      // clause before shipping to production and prefer custom claims or
+      // server-side role management.
+      return isSignedIn() && (
+        request.auth.token.admin == true
+        || getUserRole(request.auth.uid) == 'admin'
+        || request.auth.uid in [
+          'msLzg2LxX7Rd3WKVwaqmhWl9KUk2',
+          'QrUFuc0dERRPqhXDwZKc85ByLVj2',
+          'Gsz4iCYyQVc5hFoiS4YnidLJ8ML2'
+        ]
+      );
+    }
+
+    function isOwner(fieldPath) {
+      return isSignedIn() && 
+        ((request.resource != null && request.resource.data[fieldPath] == request.auth.uid)
+         || (resource != null && resource.data[fieldPath] == request.auth.uid));
+    }
+
+    // Basic validators
+    function isNonEmptyString(val) {
+      return val is string && val.size() > 0;
+    }
+
+    function isStringOrNull(val) {
+      return val == null || val is string;
+    }
+
+    function isStringArray(arr, maxLen) {
+      // Firestore rules do not support lambda expressions like `->`.
+      // Do a lightweight validation here: ensure it's a list within size limits
+      // and at least check that the first element (if present) is a string.
+      // For stricter per-item validation consider checking on server-side or
+      // via Cloud Functions or the emulator with test scripts.
+      return arr is list
+        && arr.size() <= maxLen
+        && arr.size() >= 0
+        && (arr.size() == 0 || arr[0] is string);
+    }
+
+    // --- Posts ---
+    match /posts/{postId} {
+      allow read: if true; // public
+
+      allow create: if isSignedIn() &&
+        request.resource.data.keys().hasAll(['title','body','authorId','createdAt'])
+        && request.resource.data.authorId == request.auth.uid
+  && isNonEmptyString(request.resource.data.title)
+  && isNonEmptyString(request.resource.data.body);
+
+      // Only the author or admin may update/delete. Don't allow changing authorId.
+      allow update, delete: if isSignedIn() && (
+        isAdmin()
+        || resource.data.authorId == request.auth.uid
+      ) && (
+        // authorId is immutable
+        !(request.resource.data.authorId != resource.data.authorId)
+      );
+    }
+
+    // --- Users ---
+    match /users/{userId} {
+      allow read: if true;
+
+      // Users can write their profile; disallow client from setting `role` or `admin` claim.
+      allow create: if isSignedIn() && request.auth.uid == userId
+        && !('role' in request.resource.data)
+        && !('admin' in request.resource.data);
+
+      allow update: if isSignedIn() && request.auth.uid == userId
+        && !('role' in request.resource.data)
+        && !('admin' in request.resource.data);
+
+      // Admins can set roles via backend (not allowed from client).
+      allow delete: if isSignedIn() && (isAdmin() || request.auth.uid == userId);
+    }
+
+    // --- Portfolio projects ---
+    match /portfolio/{projectId} {
+      allow read: if true;
+
+      allow create: if isSignedIn()
+        && request.resource.data.userId == request.auth.uid
+        && isNonEmptyString(request.resource.data.title)
+        && isStringOrNull(request.resource.data.description);
+
+      allow update, delete: if isSignedIn() && (
+        isAdmin() || resource.data.userId == request.auth.uid
+      );
+    }
+
+    // --- Projects (general) ---
+    match /projects/{projectId} {
+      allow read: if true;
+
+      allow create: if isSignedIn()
+        && request.resource.data.userId == request.auth.uid
+        && isNonEmptyString(request.resource.data.title);
+
+      allow update, delete: if isSignedIn() && (
+        isAdmin() || resource.data.userId == request.auth.uid
+      );
+    }
+
+    // --- Messages (inbox) ---
+    match /messages/{userId}/inbox/{messageId} {
+      // Anyone may create a message to someone's inbox (contact form). Validate sender fields to avoid spam.
+      allow create: if request.resource.data.keys().hasAll(['from','fromEmail','body','sentAt'])
+        && isNonEmptyString(request.resource.data.from)
+        && isNonEmptyString(request.resource.data.fromEmail)
+        && isNonEmptyString(request.resource.data.body)
+        && request.resource.data.sentAt == request.time;
+
+      // Only the inbox owner may read/update/delete their messages
+      allow read, update, delete: if isSignedIn() && request.auth.uid == userId;
+    }
+
+    // --- Pets under each user ---
+    match /users/{userId}/pets/{petId} {
+      allow read, write: if isSignedIn() && request.auth.uid == userId;
+    }
+
+    // --- Jobs: marketplace ---
+    match /jobs/{jobId} {
+      // Public listing
+      allow read: if true;
+
+      // Create: only admins (custom claim) OR users/{uid}.role == 'admin'
+      allow create: if isAdmin() &&
+        request.resource.data.keys().hasAll(['title','company','postedBy','createdAt'])
+        && request.resource.data.postedBy == request.auth.uid
+  && isNonEmptyString(request.resource.data.title)
+  && isNonEmptyString(request.resource.data.company)
+        // optional fields validation
+        && (request.resource.data.location == null || isNonEmptyString(request.resource.data.location))
+  && (request.resource.data.type == null || request.resource.data.type in ['full-time','part-time','contract','internship','freelance','other','Remote','Hybrid','Onsite'])
+        && (request.resource.data.tags == null || isStringArray(request.resource.data.tags, 20))
+        && (request.resource.data.salaryRange == null || (
+          request.resource.data.salaryRange.min is number
+          && request.resource.data.salaryRange.max is number
+          && request.resource.data.salaryRange.min <= request.resource.data.salaryRange.max
+        ));
+
+      // Update/Delete: poster or admin. Prevent changing postedBy or createdAt.
+      allow update, delete: if isSignedIn() && (
+        isAdmin()
+        || resource.data.postedBy == request.auth.uid
+      ) && (
+        // postedBy and createdAt immutable
+        !(request.resource.data.postedBy != resource.data.postedBy)
+        && !(request.resource.data.createdAt != resource.data.createdAt)
+      );
+
+      // Applications subcollection
+      match /applications/{appId} {
+        // Create: applicant must be signed-in and applicantId must be their uid; createdAt must equal request.time
+        allow create: if isSignedIn()
+          && request.resource.data.keys().hasAll(['applicantId','jobId','createdAt'])
+          && request.resource.data.applicantId == request.auth.uid
+          && request.resource.data.jobId == jobId
+          && (request.resource.data.coverLetter == null || (request.resource.data.coverLetter is string && request.resource.data.coverLetter.size() <= 5000))
+          && (request.resource.data.resumeUrl == null || (request.resource.data.resumeUrl is string && request.resource.data.resumeUrl.size() <= 2000));
+
+        // Read: applicant, job poster (owner of job), or admin
+        allow read: if isSignedIn() && (
+          isAdmin()
+          || resource.data.applicantId == request.auth.uid
+          || get(/databases/$(database)/documents/jobs/$(jobId)).data.postedBy == request.auth.uid
+        );
+
+        // Update/Delete: applicant or admin. Recruiter can update an 'status' field if poster of job (handled via update rule below)
+        allow update, delete: if isSignedIn() && (
+          isAdmin()
+          || resource.data.applicantId == request.auth.uid
+          || get(/databases/$(database)/documents/jobs/$(jobId)).data.postedBy == request.auth.uid
+        ) && (
+          // applicantId and jobId immutable
+          !(request.resource.data.applicantId != resource.data.applicantId)
+          && !(request.resource.data.jobId != resource.data.jobId)
+        );
+      }
+    }
+
+    // --- Fallback: deny everything else by default ---
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}

@@ -10,10 +10,11 @@ import {
   query,
   where,
 } from 'firebase/firestore';
-import { toast } from 'react-toastify';
+import { useToast } from '../UI/ToastContext';
 import { motion } from 'framer-motion';
 
 function Contact() {
+  const toast = useToast();
   const [formData, setFormData] = useState({ name: '', email: '', message: '' });
   const [loading, setLoading] = useState(false);
   const [adminId, setAdminId] = useState(null);
@@ -52,7 +53,7 @@ function Contact() {
     setLoading(true);
 
     if (!adminId) {
-      toast.error('Admin not available. Try again later.');
+      toast.push('Admin not available. Try again later.', { type: 'error' });
       setLoading(false);
       return;
     }
@@ -68,13 +69,13 @@ try {
   });
 
   if (!navigator.onLine) {
-    toast.info("You're currently offline. Your message will send when connection is restored.");
+    toast.push("You're currently offline. Your message will send when connection is restored.", { type: 'info' });
   }
-  toast.success('Message sent successfully!');
+  toast.push('Message sent successfully!', { type: 'info' });
   setFormData({ name: '', email: '', message: '' });
 } catch (err) {
   console.error('Firestore Error:', err);
-  toast.error('Failed to send message.');
+  toast.push('Failed to send message.', { type: 'error' });
 } finally {
   setLoading(false);
 }

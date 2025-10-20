@@ -21,6 +21,7 @@
     "dotenv": "^17.0.1",
     "file-saver": "^2.0.5",
     "firebase": "^11.9.1",
+    "firebase-admin": "^13.5.0",
     "framer-motion": "^12.23.3",
     "highlight.js": "^11.11.1",
     "html-to-image": "^1.11.13",
@@ -39,8 +40,7 @@
     "react-markdown": "^10.1.0",
     "react-router-dom": "^7.6.2",
     "react-scroll": "^1.9.3",
-    "react-simple-icons": "^1.0.0-beta.5",
-    "react-toastify": "^11.0.5",
+  "react-simple-icons": "^1.0.0-beta.5",
     "recharts": "^3.1.0",
     "rehype-highlight": "^7.0.2",
     "remark-gfm": "^4.0.1",
@@ -61,5 +61,18 @@
     "postcss": "^8.5.6",
     "tailwindcss": "^3.4.1",
     "vite": "^6.3.5"
-  }
+  },
+  "description": "",
+  "main": "index.js",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/praisecracks/Portfolink.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/praisecracks/Portfolink/issues"
+  },
+  "homepage": "https://github.com/praisecracks/Portfolink#readme"
 }

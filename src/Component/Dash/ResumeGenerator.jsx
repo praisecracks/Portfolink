@@ -4,7 +4,7 @@ import {
   doc, getDoc, collection, query, where, onSnapshot, updateDoc,
 } from 'firebase/firestore';
 import html2pdf from 'html2pdf.js';
-import { toast } from 'react-toastify';
+import { useToast } from '../UI/ToastContext';
 import { saveAs } from 'file-saver';
 import Chat from './Chat';
 import ResumeHeader from './ResumeParts/ResuneHeader';
@@ -26,6 +26,7 @@ function ResumeGenerator() {
   const [editMode, setEditMode] = useState(false);
   const [selectedTemplate, setSelectedTemplate] = useState('modern');
   const resumeRef = useRef();
+  const toast = useToast();
 
   const templateClasses = {
     modern: 'bg-white shadow-lg p-4 sm:p-8 rounded-lg text-gray-800 font-sans text-sm sm:text-base leading-relaxed sm:leading-loose',
@@ -96,10 +97,10 @@ function ResumeGenerator() {
     try {
       const userRef = doc(db, 'users', user.uid);
       await updateDoc(userRef, profile);
-      toast.success('Resume updated successfully');
+      toast.push('Resume updated successfully', { type: 'info' });
       setEditMode(false);
     } catch (error) {
-      toast.error('Update failed');
+      toast.push('Update failed', { type: 'error' });
     }
   };
 

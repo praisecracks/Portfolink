@@ -14,9 +14,10 @@ import {
 } from "firebase/firestore";
 import { db } from "../../firebase";
 import moment from "moment";
-import { toast } from "react-toastify";
+import { useToast } from '../UI/ToastContext';
 
 function Profile() {
+  const toast = useToast();
   const [userData, setUserData] = useState(null);
   const [projectCount, setProjectCount] = useState(0);
   const [loading, setLoading] = useState(true);
@@ -32,6 +33,7 @@ const [editForm, setEditForm] = useState({
 
   const [uploading, setUploading] = useState(false);
   const fileInputRef = useRef(null);
+  const bannerInputRef = useRef(null);
   const ADMIN_UID = "msLzg2LxX7Rd3WKVwaqmhWl9KUk2";
   
 
@@ -47,7 +49,7 @@ const [editForm, setEditForm] = useState({
         const docRef = doc(db, "users", currentUser.uid);
         const docSnap = await getDoc(docRef);
         if (!docSnap.exists()) {
-          toast.info("Profile not found.");
+          toast.push("Profile not found.", { type: 'info' });
           setLoading(false);
           return;
         }
@@ -66,6 +68,7 @@ const [editForm, setEditForm] = useState({
         uid: currentUser.uid,
         email: currentUser.email,
         photoURL: data.photoURL || currentUser.photoURL || "",
+        bannerURL: data.bannerURL || '',
         joinedAt: currentUser.metadata?.creationTime,
         role,
         views: typeof data.views === 'number' ? data.views : 0, 
@@ -78,12 +81,13 @@ const [editForm, setEditForm] = useState({
         skills: (data.skills || []).join(", "),
         photoURL: data.photoURL || "",
         isPublic: data.isPublic !== false, // 👈 default to true if missing
+        bannerURL: data.bannerURL || '',
       });
 
         setProjectCount(projectSnap.size);
       } catch (error) {
         console.error("Error loading profile data:", error);
-        toast.error("Failed to load profile data");
+  toast.push("Failed to load profile data", { type: 'error' });
       } finally {
         setLoading(false);
       }
@@ -100,9 +104,9 @@ const [editForm, setEditForm] = useState({
     try {
       setUploading(true);
       const imageUrl = await uploadImageToBackend(file);
-      if (imageUrl) {
+        if (imageUrl) {
         setEditForm((prev) => ({ ...prev, photoURL: imageUrl }));
-        toast.success("Image uploaded!");
+        toast.push("Image uploaded!", { type: 'info' });
       }
     } catch (error) {
       console.error("Image upload failed:", error);
@@ -111,6 +115,23 @@ const [editForm, setEditForm] = useState({
       setUploading(false);
     }
   };
+
+  const handleBannerUpload = async (file) => {
+    try {
+      setUploading(true);
+      const url = await uploadImageToBackend(file);
+      if(url){
+        setEditForm((p)=> ({ ...p, bannerURL: url }));
+        setUserData((prev)=> ({ ...prev, bannerURL: url }));
+        // persist
+        const auth = getAuth();
+        const currentUser = auth.currentUser;
+        await setDoc(doc(db,'users', currentUser.uid), { bannerURL: url }, { merge: true });
+        toast.push('Banner updated', { type: 'info' });
+      }
+    }catch(err){ console.error(err); toast.push('Banner upload failed', { type: 'error' }); }
+    finally{ setUploading(false); }
+  }
 
   const handleSave = async () => {
     try {
@@ -132,18 +153,18 @@ const [editForm, setEditForm] = useState({
         merge: true,
       });
 
-      toast.success("Profile updated!");
+  toast.push("Profile updated!", { type: 'info' });
       setUserData((prev) => ({ ...prev, ...updatedData }));
       setIsModalOpen(false);
     } catch (err) {
       console.error(err);
-      toast.error("Failed to save profile.");
+  toast.push("Failed to save profile.", { type: 'error' });
     }
   };
 
   const handleDeletePhoto = () => {
-    setEditForm((prev) => ({ ...prev, photoURL: "" }));
-    toast.info("Photo will be removed when you save changes.");
+  setEditForm((prev) => ({ ...prev, photoURL: "" }));
+  toast.push("Photo will be removed when you save changes.", { type: 'info' });
   };
 
 
@@ -187,11 +208,20 @@ const [editForm, setEditForm] = useState({
 
   return (
     <div className="w-full min-h-screen bg-gray-50 dark:bg-gray-900 text-gray-800 dark:text-gray-100">
-      <div className="w-full h-40 bg-indigo-600 relative group">
-        <div
-          className="absolute left-6 -bottom-14 w-28 h-28 rounded-full border-4 border-white dark:border-gray-900 bg-gray-200 overflow-hidden shadow-lg group-hover:opacity-90 transition cursor-pointer"
-          onClick={() => setIsModalOpen(true)}
-        >
+      <div className="w-full h-48 relative">
+        {userData.bannerURL ? (
+          <img src={userData.bannerURL} alt="banner" className="w-full h-48 object-cover" />
+        ) : (
+          <div className="w-full h-48 bg-gradient-to-r from-indigo-600 to-purple-600" />
+        )}
+        <div className="absolute right-4 top-4">
+          <label className="cursor-pointer px-3 py-1 bg-white/80 dark:bg-black/60 rounded text-sm">
+            Edit Banner
+            <input type="file" accept="image/*" className="hidden" ref={bannerInputRef} onChange={(e)=>{ const f = e.target.files?.[0]; if(f) handleBannerUpload(f); }} />
+          </label>
+        </div>
+      
+        <div className="absolute left-6 -bottom-16 w-28 h-28 rounded-full border-4 border-white dark:border-gray-900 bg-gray-200 overflow-hidden shadow-lg group-hover:opacity-90 transition cursor-pointer" onClick={() => setIsModalOpen(true)}>
           <img
             src={
               userData.photoURL?.trim()
@@ -204,6 +234,10 @@ const [editForm, setEditForm] = useState({
           <div className="absolute inset-0 bg-black bg-opacity-40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition">
             <FiCamera className="text-white text-xl" />
           </div>
+        </div>
+        <div className="absolute right-6 -bottom-6 flex gap-2">
+          {userData.subscription ? <span className="px-3 py-1 bg-green-600 text-white rounded">Subscribed</span> : <span className="px-3 py-1 bg-gray-200 dark:bg-gray-700 rounded">Free</span>}
+          {userData.isRecruiter && <span className="px-3 py-1 bg-indigo-600 text-white rounded">Recruiter</span>}
         </div>
       </div>
 

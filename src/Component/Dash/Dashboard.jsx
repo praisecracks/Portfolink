@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import { useToast } from '../UI/ToastContext';
 import {
   LineChart,
   Line,
@@ -8,6 +9,8 @@ import {
   Tooltip,
   ResponsiveContainer,
 } from 'recharts';
+import DashboardHeader from './ui/DashboardHeader';
+import QuickAction from './ui/QuickAction';
 import { getAuth } from 'firebase/auth';
 import {
   collection,
@@ -35,6 +38,7 @@ import Chat from './Chat';
 function Dashboard() {
   const auth = getAuth();
   const user = auth.currentUser;
+  const toast = useToast();
 
   const [profile, setProfile] = useState(null);
   const [projects, setProjects] = useState([]);
@@ -154,7 +158,7 @@ function Dashboard() {
       setNewPost('');
     } catch (err) {
       console.error('Error posting:', err);
-      alert('Failed to add post.');
+      toast.push('Failed to add post.', { type: 'error' });
     }
   };
 
@@ -189,7 +193,14 @@ function Dashboard() {
   }
 
   return (
-    <div className="p-6 max-w-7xl mx-auto space-y-10 text-gray-800 dark:text-gray-100">
+    <div className="p-6 max-w-7xl mx-auto space-y-8 text-gray-800 dark:text-gray-100">
+      <DashboardHeader name={`Welcome back, ${profile?.fullName || user.displayName || 'User'}`} onCreateProject={()=> window.location.href='/dashboard/projects'} onPostJob={()=> window.location.href='/marketplace/post-job'} onSearch={(q)=> console.log('search', q)} />
+
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <QuickAction title="Create Project" subtitle="Start a new portfolio item" onClick={()=> window.location.href='/dashboard/projects'} icon={<svg className="w-6 h-6" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor"><path d="M12 5v14m7-7H5" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>} />
+        <QuickAction title="Post Job" subtitle="Open job posting flow" onClick={()=> window.location.href='/marketplace/post-job'} icon={<svg className="w-6 h-6" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor"><path d="M3 12h18" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>} />
+        <QuickAction title="View Applicants" subtitle="See job applicants" onClick={()=> window.location.href='/dashboard/marketplace'} icon={<svg className="w-6 h-6" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor"><path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zM4 20v-1c0-2.21 3.58-4 8-4s8 1.79 8 4v1H4z"/></svg>} />
+      </div>
       {/* Welcome Section */}
       <section className="rounded-xl p-6 shadow-lg backdrop-blur-md border border-gray-200 dark:border-gray-700 transition-all bg-gradient-to-r from-pink-500 via-indigo-500 to-purple-500 text-white">
         <h1 className="text-3xl font-bold">

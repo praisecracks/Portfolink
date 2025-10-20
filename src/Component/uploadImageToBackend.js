@@ -1,5 +1,3 @@
-import { toast } from 'react-toastify';
-
 export const uploadImageToBackend = async (file) => {
   const formData = new FormData();
   formData.append('image', file);
@@ -23,13 +21,12 @@ export const uploadImageToBackend = async (file) => {
     if (data?.imageUrl) {
       return data.imageUrl;
     } else {
-      toast.error('Image upload failed. No URL returned.');
+      console.error('Image upload failed. No URL returned.');
       return '';
     }
 
   } catch (err) {
     console.error('Upload error:', err);
-    toast.error('Image upload failed. Please try again.');
     return '';
   }
 };

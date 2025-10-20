@@ -25,7 +25,7 @@ import {
   where,
 } from "firebase/firestore";
 import { getAuth, onAuthStateChanged } from "firebase/auth";
-import { toast } from "react-toastify";
+import { useToast } from '../UI/ToastContext';
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import rehypeHighlight from "rehype-highlight";
@@ -56,6 +56,7 @@ function Projects() {
   });
 
   const [sortOption, setSortOption] = useState("newest");
+  const toast = useToast();
   const [categoryFilter, setCategoryFilter] = useState("all");
 
   useEffect(() => {
@@ -137,15 +138,15 @@ useEffect(() => {
       const res = await axios.post("https://portfolink-backend.onrender.com/upload", form);
       return res.data.imageUrl;
     } catch (error) {
-      toast.error("Image upload failed");
+  toast.push("Image upload failed", { type: 'error' });
       return "";
     }
   };
 
   const handleSubmit = async (e, push = false) => {
     e.preventDefault();
-    if (!formData.title || !formData.description) {
-      toast.error("Title and description are required");
+      if (!formData.title || !formData.description) {
+      toast.push("Title and description are required", { type: 'error' });
       return;
     }
 
@@ -177,7 +178,7 @@ useEffect(() => {
 
       if (editId) {
         await updateDoc(doc(db, "projects", editId), data);
-        toast.success(push ? "Project pushed live!" : "Project updated");
+  toast.push(push ? "Project pushed live!" : "Project updated", { type: 'info' });
         if (push) {
           await addDoc(collection(db, "portfolio"), {
             ...data,
@@ -190,7 +191,7 @@ useEffect(() => {
         } else {
           await addDoc(collection(db, "projects"), data);
         }
-        toast.success(push ? "Project pushed!" : "Project added");
+  toast.push(push ? "Project pushed!" : "Project added", { type: 'info' });
       }
 
       setFormVisible(false);
@@ -206,7 +207,7 @@ useEffect(() => {
         tags: "",
       });
     } catch (err) {
-      toast.error("Error saving project");
+  toast.push("Error saving project", { type: 'error' });
     } finally {
       setLoading(false);
     }
@@ -216,9 +217,9 @@ useEffect(() => {
     if (!window.confirm("Are you sure you want to delete this project?")) return;
     try {
       await deleteDoc(doc(db, "projects", id));
-      toast.success("Deleted!");
+  toast.push("Deleted!", { type: 'info' });
     } catch (err) {
-      toast.error("Delete failed");
+  toast.push("Delete failed", { type: 'error' });
     }
   };
 
