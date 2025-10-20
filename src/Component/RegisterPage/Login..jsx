@@ -8,6 +8,7 @@ import {
   fetchSignInMethodsForEmail,
 } from 'firebase/auth';
 import { auth, googleProvider, githubProvider, db } from '../../firebase';
+import { signInWithRedirect } from 'firebase/auth';
 import { doc, setDoc } from 'firebase/firestore';
 import { useToast } from '../UI/ToastContext';
 import { motion } from 'framer-motion';
@@ -80,7 +81,26 @@ function Login() {
   const handleProviderLogin = async (providerName, providerObj) => {
     try {
       setLoadingProvider(providerName);
-      const result = await signInWithPopup(auth, providerObj);
+      let result;
+      try {
+        result = await signInWithPopup(auth, providerObj);
+      } catch (popupErr) {
+        console.warn('Popup sign-in failed, attempting redirect fallback', popupErr);
+        const popupCode = popupErr?.code || '';
+        if (['auth/popup-blocked','auth/popup-closed-by-user','auth/cancelled-popup-request'].includes(popupCode) || /popup/i.test(popupErr?.message || '')) {
+          try {
+            await signInWithRedirect(auth, providerObj);
+            return;
+          } catch (redirErr) {
+            console.error('Redirect fallback failed:', redirErr);
+            const codeMsg = redirErr?.code ? `${redirErr.code}` : redirErr?.message || 'Unknown';
+            toast.push(`${providerName} sign-in redirect failed: ${codeMsg}`, { type: 'error' });
+            setLoadingProvider(null);
+            return;
+          }
+        }
+        throw popupErr;
+      }
       const user = result.user;
 
       await setDoc(doc(db, 'users', user.uid), {

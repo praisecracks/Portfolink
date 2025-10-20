@@ -72,7 +72,28 @@ function Register() {
   const handleProviderLogin = async (providerName, providerObj) => {
     try {
       setLoadingProvider(providerName);
-      const result = await signInWithPopup(auth, providerObj);
+      let result;
+      try {
+        result = await signInWithPopup(auth, providerObj);
+      } catch (popupErr) {
+        console.warn('Popup sign-in failed, attempting redirect fallback', popupErr);
+        const popupCode = popupErr?.code || '';
+        // common popup-related errors
+        if (['auth/popup-blocked','auth/popup-closed-by-user','auth/cancelled-popup-request'].includes(popupCode) || /popup/i.test(popupErr?.message || '')) {
+          try {
+            // fallback to redirect which works when popups are blocked
+            await signInWithRedirect(auth, providerObj);
+            return; // redirect will take over the flow
+          } catch (redirErr) {
+            console.error('Redirect fallback failed:', redirErr);
+            const codeMsg = redirErr?.code ? `${redirErr.code}` : redirErr?.message || 'Unknown';
+            toast.push(`${providerName} sign-in redirect failed: ${codeMsg}`, { type: 'error' });
+            setLoadingProvider(null);
+            return;
+          }
+        }
+        throw popupErr; // rethrow if it's not a popup-related error
+      }
       const user = result.user;
 
       await setDoc(doc(db, 'users', user.uid), {
